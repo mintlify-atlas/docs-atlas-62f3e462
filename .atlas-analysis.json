@@ -1,0 +1,78 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Queryly",
+  "projectDescription": "A lightweight, cross-platform CLI tool for managing local databases with support for SQLite, PostgreSQL, MySQL, and SQL Server.",
+  "theme": "aspen",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "installation",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Commands",
+        "pages": [
+          "commands/overview",
+          "commands/connect",
+          "commands/schema",
+          "commands/data"
+        ]
+      },
+      {
+        "group": "Database Providers",
+        "pages": [
+          "providers/overview",
+          "providers/sqlite",
+          "providers/postgresql",
+          "providers/mysql",
+          "providers/sqlserver"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/configuration",
+          "guides/examples",
+          "guides/troubleshooting"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/architecture",
+          "development/contributing",
+          "development/adding-providers"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-database support (SQLite, PostgreSQL, MySQL, SQL Server)",
+    "Connection management with save, test, and organize capabilities",
+    "Schema exploration to browse tables, columns, and indexes",
+    "Data browsing with beautiful terminal UI",
+    "Interactive SQL query execution mode",
+    "Data export to CSV and JSON formats",
+    "Cross-platform support (Windows, macOS, Linux)",
+    "Lightweight with fast startup and minimal dependencies"
+  ],
+  "publicApiSurface": [
+    "queryly connect add",
+    "queryly connect list",
+    "queryly connect test <name>",
+    "queryly connect remove <name>",
+    "queryly schema list <connection>",
+    "queryly schema info <connection> <table>",
+    "queryly schema tree <connection>",
+    "queryly data browse <connection> <table>",
+    "queryly data query <connection>",
+    "queryly data export <connection> <table> <format>"
+  ]
+}
