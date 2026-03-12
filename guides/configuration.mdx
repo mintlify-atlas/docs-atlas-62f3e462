@@ -1,0 +1,375 @@
+---
+title: Configuration Guide
+description: Learn how to configure Queryly, manage connection files, and customize your database setup
+---
+
+## Configuration Overview
+
+Queryly stores all configuration files in a dedicated directory in your home folder. This keeps your database connections organized and portable across sessions.
+
+## Configuration Directory
+
+### Location by Platform
+
+Queryly automatically creates and manages configuration files in platform-specific locations:
+
+<CodeGroup>
+
+```bash Windows
+C:\Users\<username>\.queryly\
+```
+
+```bash macOS/Linux
+~/.queryly/
+```
+
+</CodeGroup>
+
+<Note>
+The configuration directory is created automatically when you first run Queryly. No manual setup is required.
+</Note>
+
+## Configuration Files
+
+### connections.json
+
+This file stores all your saved database connections, including connection strings, metadata, and usage history.
+
+**File Location:**
+- Windows: `C:\Users\<username>\.queryly\connections.json`
+- macOS/Linux: `~/.queryly/connections.json`
+
+### File Structure
+
+```json
+{
+  "connections": [
+    {
+      "id": "abc123...",
+      "name": "LocalDB",
+      "dbType": "SQLite",
+      "connectionString": "Data Source=./myapp.db",
+      "lastUsed": "2025-12-13T10:30:00Z",
+      "isFavorite": false,
+      "metadata": {}
+    }
+  ],
+  "activeConnectionId": "abc123..."
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the connection (auto-generated) |
+| `name` | string | Display name for the connection |
+| `dbType` | string | Database type: `SQLite`, `PostgreSQL`, `MySQL`, or `SqlServer` |
+| `connectionString` | string | Database-specific connection string |
+| `lastUsed` | string | ISO 8601 timestamp of last usage |
+| `isFavorite` | boolean | Whether this connection is marked as favorite |
+| `metadata` | object | Additional custom metadata (optional) |
+| `activeConnectionId` | string | ID of the currently active connection |
+
+## Connection String Formats
+
+### SQLite
+
+```bash
+Data Source=path/to/database.db
+```
+
+**Common Examples:**
+
+<CodeGroup>
+
+```bash Local File
+Data Source=./mydb.db
+```
+
+```bash Absolute Path
+Data Source=/home/user/databases/app.db
+```
+
+```bash In-Memory
+Data Source=:memory:
+```
+
+```bash Read-Only
+Data Source=mydb.db;Mode=ReadOnly
+```
+
+</CodeGroup>
+
+### PostgreSQL
+
+```bash
+Host=localhost;Database=mydb;Username=postgres;Password=secret
+```
+
+**Common Examples:**
+
+<CodeGroup>
+
+```bash Local Database
+Host=localhost;Database=myapp;Username=postgres;Password=mypass
+```
+
+```bash With Port
+Host=localhost;Port=5432;Database=myapp;Username=postgres;Password=mypass
+```
+
+```bash With SSL
+Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Require
+```
+
+```bash Remote Database
+Host=db.example.com;Database=production;Username=admin;Password=secure123
+```
+
+</CodeGroup>
+
+### MySQL
+
+```bash
+Server=localhost;Database=mydb;User=root;Password=secret
+```
+
+**Common Examples:**
+
+<CodeGroup>
+
+```bash Local Database
+Server=localhost;Database=myapp;User=root;Password=mypass
+```
+
+```bash With Port
+Server=localhost;Port=3306;Database=myapp;User=root;Password=mypass
+```
+
+```bash Remote Database
+Server=db.example.com;Database=production;User=admin;Password=secure123
+```
+
+```bash With SSL
+Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=Required
+```
+
+</CodeGroup>
+
+### SQL Server
+
+```bash
+Server=localhost;Database=mydb;User Id=sa;Password=secret;TrustServerCertificate=True
+```
+
+**Common Examples:**
+
+<CodeGroup>
+
+```bash Local Database
+Server=localhost;Database=myapp;User Id=sa;Password=YourPassword123;TrustServerCertificate=True
+```
+
+```bash LocalDB
+Server=(localdb)\MSSQLLocalDB;Database=myapp;Integrated Security=true
+```
+
+```bash SQL Express
+Server=localhost\SQLEXPRESS;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+```
+
+```bash Windows Authentication
+Server=localhost;Database=myapp;Integrated Security=true
+```
+
+</CodeGroup>
+
+## Manual Configuration
+
+### Editing connections.json
+
+You can manually edit the `connections.json` file to:
+- Bulk import connections
+- Update connection strings
+- Modify metadata
+- Set favorites
+
+<Steps>
+
+<Step title="Locate the configuration file">
+Find your `connections.json` file:
+
+```bash
+# macOS/Linux
+cd ~/.queryly
+
+# Windows
+cd C:\Users\<username>\.queryly
+```
+</Step>
+
+<Step title="Open in a text editor">
+Use your preferred text editor:
+
+```bash
+# macOS/Linux
+nano connections.json
+
+# Or use VS Code
+code ~/.queryly/connections.json
+```
+</Step>
+
+<Step title="Make your changes">
+Edit the JSON carefully, ensuring valid JSON syntax:
+
+```json
+{
+  "connections": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "ProductionDB",
+      "dbType": "PostgreSQL",
+      "connectionString": "Host=prod.example.com;Database=app;Username=admin;Password=secret",
+      "lastUsed": "2026-03-12T00:00:00Z",
+      "isFavorite": true,
+      "metadata": {
+        "environment": "production",
+        "team": "backend"
+      }
+    }
+  ],
+  "activeConnectionId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+</Step>
+
+<Step title="Test your connection">
+Verify the connection works:
+
+```bash
+queryly connect test ProductionDB
+```
+</Step>
+
+</Steps>
+
+<Warning>
+Always validate your JSON before saving. Invalid JSON will cause Queryly to fail on startup. Use a JSON validator or editor with syntax checking.
+</Warning>
+
+## Backup and Migration
+
+### Backing Up Configuration
+
+<Tip>
+Regularly backup your `connections.json` file to avoid losing connection information.
+</Tip>
+
+```bash
+# Create a backup
+cp ~/.queryly/connections.json ~/.queryly/connections.backup.json
+
+# Or copy to a safe location
+cp ~/.queryly/connections.json ~/Documents/queryly-backup-2026-03-12.json
+```
+
+### Migrating to a New Machine
+
+<Steps>
+
+<Step title="Export from old machine">
+Copy your configuration file:
+
+```bash
+cp ~/.queryly/connections.json ~/queryly-export.json
+```
+</Step>
+
+<Step title="Transfer the file">
+Move the file to your new machine using your preferred method (USB, cloud storage, etc.)
+</Step>
+
+<Step title="Import on new machine">
+Install Queryly on the new machine, then copy the configuration:
+
+```bash
+# Create the config directory if it doesn't exist
+mkdir -p ~/.queryly
+
+# Copy the exported file
+cp ~/queryly-export.json ~/.queryly/connections.json
+```
+</Step>
+
+<Step title="Verify connections">
+List connections to verify import:
+
+```bash
+queryly connect list
+```
+</Step>
+
+</Steps>
+
+### Resetting Configuration
+
+To start fresh, simply delete the configuration directory:
+
+```bash
+# macOS/Linux
+rm -rf ~/.queryly
+
+# Windows (PowerShell)
+Remove-Item -Recurse -Force $env:USERPROFILE\.queryly
+```
+
+<Warning>
+This will permanently delete all saved connections. Make a backup first if you might need to restore them.
+</Warning>
+
+## Security Considerations
+
+### Connection String Security
+
+<Warning>
+Connection strings in `connections.json` are stored in **plain text**, including passwords. Protect this file appropriately.
+</Warning>
+
+**Best Practices:**
+
+1. **File Permissions** - Restrict access to your home directory:
+   ```bash
+   chmod 600 ~/.queryly/connections.json
+   ```
+
+2. **Avoid Storing Production Credentials** - Use environment-specific credentials and regenerate passwords regularly
+
+3. **Use Read-Only Accounts** - Create database users with minimal permissions for browsing
+
+4. **Backup Securely** - Encrypt backups containing connection information:
+   ```bash
+   # Encrypt backup (macOS/Linux)
+   gpg -c ~/.queryly/connections.json
+   ```
+
+## Configuration Tips
+
+<Tip>
+**Organize with Names**: Use descriptive connection names like `Local-Dev-SQLite`, `Staging-PostgreSQL`, `Production-MySQL` to easily identify connections.
+</Tip>
+
+<Tip>
+**Test Before Saving**: Queryly automatically tests connections before saving them. If a test fails, verify your connection string format.
+</Tip>
+
+<Tip>
+**Use Relative Paths for SQLite**: For portable SQLite databases, use relative paths like `Data Source=./myapp.db` instead of absolute paths.
+</Tip>
+
+## Next Steps
+
+- [Usage Examples](/guides/examples) - See real-world usage scenarios
+- [Troubleshooting](/guides/troubleshooting) - Fix common configuration issues
+- [Connection Commands](/commands/connect) - Learn all connection management commands

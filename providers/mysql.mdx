@@ -1,0 +1,522 @@
+---
+title: MySQL Provider
+description: Complete guide to using MySQL with Queryly
+icon: dolphin
+---
+
+MySQL is one of the world's most popular open-source relational databases, powering millions of web applications. Queryly provides full support for connecting to and managing MySQL databases.
+
+## Connection String Format
+
+The standard MySQL connection string format:
+
+```
+Server=localhost;Database=mydb;User=root;Password=secret
+```
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Local Database">
+    ### Standard Local Connection
+    ```bash
+    # Basic local connection
+    Server=localhost;Database=myapp;User=root;Password=mypass
+
+    # With explicit port (default is 3306)
+    Server=localhost;Port=3306;Database=myapp;User=root;Password=mypass
+
+    # Using IP address
+    Server=127.0.0.1;Database=myapp;User=root;Password=mypass
+    ```
+
+    <Note>
+    Default MySQL port is `3306`. You can omit the `Port` parameter if using the default.
+    </Note>
+  </Tab>
+
+  <Tab title="Remote Database">
+    ### Remote Server Connection
+    ```bash
+    # Remote host with domain
+    Server=db.example.com;Database=production;User=admin;Password=secure123
+
+    # Remote host with IP
+    Server=192.168.1.100;Database=production;User=admin;Password=secure123
+
+    # Custom port
+    Server=db.example.com;Port=3307;Database=production;User=admin;Password=secure123
+    ```
+
+    <Warning>
+    Ensure your MySQL server is configured to accept remote connections. Check the `bind-address` setting in `my.cnf` and verify firewall rules.
+    </Warning>
+  </Tab>
+
+  <Tab title="With SSL">
+    ### Secure Connections
+    ```bash
+    # Require SSL
+    Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=Required
+
+    # Prefer SSL (falls back to non-SSL)
+    Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=Preferred
+
+    # Disable SSL
+    Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=None
+
+    # With certificate verification
+    Server=db.example.com;Database=myapp;User=root;Password=mypass;SslMode=VerifyFull;SslCa=/path/to/ca.pem
+    ```
+
+    <Info>
+    SSL modes: `None`, `Preferred`, `Required`, `VerifyCA`, `VerifyFull`
+    </Info>
+  </Tab>
+
+  <Tab title="Advanced">
+    ### Advanced Configuration
+    ```bash
+    # Connection timeout
+    Server=localhost;Database=myapp;User=root;Password=mypass;Connection Timeout=30
+
+    # Command timeout
+    Server=localhost;Database=myapp;User=root;Password=mypass;Default Command Timeout=60
+
+    # Connection pooling
+    Server=localhost;Database=myapp;User=root;Password=mypass;Pooling=true;MaximumPoolSize=100
+
+    # Character set
+    Server=localhost;Database=myapp;User=root;Password=mypass;CharSet=utf8mb4
+
+    # Allow user variables
+    Server=localhost;Database=myapp;User=root;Password=mypass;Allow User Variables=true
+
+    # Allow batch statements
+    Server=localhost;Database=myapp;User=root;Password=mypass;Allow Batch=true
+    ```
+  </Tab>
+</Tabs>
+
+## Adding a MySQL Connection
+
+### Interactive Mode
+```bash
+queryly connect add
+```
+
+Example session:
+```bash
+$ queryly connect add
+Enter connection name: ProductionMySQL
+Select database type: MySQL
+Enter connection string: Server=localhost;Database=myapp;User=root;Password=mypass
+✓ Connection test successful!
+✓ Connection 'ProductionMySQL' saved
+```
+
+## Supported Features
+
+<Check>**Connection Management** - Add, test, list, and remove connections</Check>
+<Check>**Schema Exploration** - List tables and view structures</Check>
+<Check>**Table Browsing** - View table data with proper type handling</Check>
+<Check>**Query Execution** - Run MySQL-specific SQL queries</Check>
+<Check>**Data Export** - Export tables to CSV or JSON formats</Check>
+
+## Port Configuration
+
+### Default Port
+MySQL uses port **3306** by default. You can omit the port in your connection string:
+
+```bash
+Server=localhost;Database=myapp;User=root;Password=mypass
+```
+
+### Custom Port
+If your MySQL server runs on a different port:
+
+```bash
+Server=localhost;Port=3307;Database=myapp;User=root;Password=mypass
+```
+
+### Checking MySQL Port
+```bash
+# On the MySQL server
+sudo netstat -tlnp | grep mysql
+
+# Or check MySQL configuration
+mysql -u root -p -e "SHOW VARIABLES LIKE 'port';"
+```
+
+## Connection Options
+
+<Tabs>
+  <Tab title="Character Set">
+    ### UTF-8 Support
+    ```bash
+    # Use utf8mb4 for full Unicode support (including emojis)
+    Server=localhost;Database=myapp;User=root;Password=mypass;CharSet=utf8mb4
+
+    # Legacy utf8 (3-byte only)
+    Server=localhost;Database=myapp;User=root;Password=mypass;CharSet=utf8
+    ```
+
+    <Tip>
+    Always use `utf8mb4` for new applications. It supports the full Unicode character set, including emojis and special characters.
+    </Tip>
+  </Tab>
+
+  <Tab title="Timeouts">
+    ### Connection and Command Timeouts
+    ```bash
+    # Connection timeout (seconds to wait for connection)
+    Server=localhost;Database=myapp;User=root;Password=mypass;Connection Timeout=30
+
+    # Command timeout (seconds to wait for query execution)
+    Server=localhost;Database=myapp;User=root;Password=mypass;Default Command Timeout=300
+
+    # Both timeouts
+    Server=localhost;Database=myapp;User=root;Password=mypass;Connection Timeout=30;Default Command Timeout=300
+    ```
+  </Tab>
+
+  <Tab title="Connection Pooling">
+    ### Pool Configuration
+    ```bash
+    # Enable pooling with defaults
+    Server=localhost;Database=myapp;User=root;Password=mypass;Pooling=true
+
+    # Custom pool size
+    Server=localhost;Database=myapp;User=root;Password=mypass;Pooling=true;MinimumPoolSize=0;MaximumPoolSize=100
+
+    # Disable pooling
+    Server=localhost;Database=myapp;User=root;Password=mypass;Pooling=false
+    ```
+
+    <Note>
+    Connection pooling is enabled by default. It improves performance by reusing connections.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Authentication
+
+<Tabs>
+  <Tab title="Standard Auth">
+    ### Username/Password
+    ```bash
+    # Root user
+    Server=localhost;Database=myapp;User=root;Password=mypass
+
+    # Regular user
+    Server=localhost;Database=myapp;User=appuser;Password=apppass
+
+    # User with special characters
+    Server=localhost;Database=myapp;User=app@host;Password=p@ssw0rd!
+    ```
+
+    <Warning>
+    Avoid using the `root` account for applications. Create dedicated users with limited permissions.
+    </Warning>
+  </Tab>
+
+  <Tab title="No Password">
+    ### Authentication Without Password
+    ```bash
+    # For local development only
+    Server=localhost;Database=myapp;User=root
+    ```
+
+    <Warning>
+    Passwordless access should only be used in local development environments. Never in production.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## MySQL-Specific Features
+
+### Data Type Support
+
+Queryly handles MySQL's data types:
+
+- **Numeric**: `int`, `bigint`, `decimal`, `float`, `double`
+- **Text**: `varchar`, `text`, `char`, `mediumtext`, `longtext`
+- **Date/Time**: `datetime`, `timestamp`, `date`, `time`, `year`
+- **Binary**: `blob`, `mediumblob`, `longblob`, `binary`, `varbinary`
+- **JSON**: `json` (MySQL 5.7+)
+- **Spatial**: `geometry`, `point`, `linestring`, `polygon`
+- **Enum/Set**: `enum`, `set`
+
+### Query Examples
+
+<Tabs>
+  <Tab title="Basic Queries">
+    ```bash
+    queryly data query ProductionMySQL
+
+    # Select queries
+    SQL> SELECT * FROM users LIMIT 10;
+    SQL> SELECT COUNT(*) FROM orders;
+    SQL> SELECT name, email FROM customers WHERE created_at > '2024-01-01';
+    ```
+  </Tab>
+
+  <Tab title="MySQL-Specific">
+    ```bash
+    # JSON operations (MySQL 5.7+)
+    SQL> SELECT JSON_EXTRACT(data, '$.name') as name FROM users;
+    SQL> SELECT * FROM orders WHERE JSON_EXTRACT(metadata, '$.status') = 'completed';
+
+    # Full-text search
+    SQL> SELECT * FROM articles WHERE MATCH(title, content) AGAINST('database');
+
+    # Date functions
+    SQL> SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) FROM orders GROUP BY month;
+
+    # String functions
+    SQL> SELECT CONCAT(first_name, ' ', last_name) as full_name FROM users;
+    ```
+  </Tab>
+
+  <Tab title="Information Queries">
+    ```bash
+    # Database size
+    SQL> SELECT 
+           table_schema as 'Database',
+           ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as 'Size (MB)'
+         FROM information_schema.tables
+         WHERE table_schema = DATABASE();
+
+    # Table sizes
+    SQL> SELECT 
+           table_name,
+           ROUND(((data_length + index_length) / 1024 / 1024), 2) as 'Size (MB)'
+         FROM information_schema.tables
+         WHERE table_schema = DATABASE()
+         ORDER BY (data_length + index_length) DESC;
+
+    # Current user and database
+    SQL> SELECT USER(), DATABASE();
+
+    # MySQL version
+    SQL> SELECT VERSION();
+    ```
+  </Tab>
+</Tabs>
+
+## Common Workflows
+
+<Tabs>
+  <Tab title="Initial Setup">
+    ```bash
+    # Add connection
+    queryly connect add
+    # name: MyMySQL
+    # type: MySQL
+    # connection string: Server=localhost;Database=myapp;User=root;Password=mypass
+
+    # Test connection
+    queryly connect test MyMySQL
+
+    # List all tables
+    queryly schema list MyMySQL
+    ```
+  </Tab>
+
+  <Tab title="Data Exploration">
+    ```bash
+    # View schema as tree
+    queryly schema tree MyMySQL
+
+    # Check table structure
+    queryly schema info MyMySQL users
+
+    # Browse table data
+    queryly data browse MyMySQL users
+
+    # Export to JSON
+    queryly data export MyMySQL users json
+    ```
+  </Tab>
+
+  <Tab title="Analysis">
+    ```bash
+    # Enter query mode
+    queryly data query MyMySQL
+
+    # Analyze data
+    SQL> SELECT DATE(created_at) as date, COUNT(*) as count
+         FROM orders 
+         GROUP BY DATE(created_at) 
+         ORDER BY date DESC
+         LIMIT 30;
+
+    SQL> SELECT status, AVG(total) as avg_total, COUNT(*) as count
+         FROM orders 
+         GROUP BY status;
+
+    SQL> exit
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused">
+    **Error**: `Unable to connect to any of the specified MySQL hosts`
+
+    **Solutions**:
+    - Verify MySQL is running: `sudo systemctl status mysql`
+    - Check the port: `sudo netstat -tlnp | grep 3306`
+    - Verify `bind-address` in `/etc/mysql/my.cnf` (use `0.0.0.0` for remote access)
+    - Check firewall rules
+
+    ```bash
+    # Start MySQL
+    sudo systemctl start mysql
+
+    # Check if it's listening
+    sudo ss -tlnp | grep 3306
+    ```
+  </Accordion>
+
+  <Accordion title="Access denied">
+    **Error**: `Access denied for user 'root'@'localhost'`
+
+    **Solutions**:
+    - Verify username and password
+    - Check user privileges
+    - Ensure user has access to the database
+
+    ```bash
+    # Reset root password
+    sudo mysql
+    mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'newpassword';
+    mysql> FLUSH PRIVILEGES;
+
+    # Grant privileges
+    mysql> GRANT ALL PRIVILEGES ON myapp.* TO 'appuser'@'localhost';
+    mysql> FLUSH PRIVILEGES;
+    ```
+  </Accordion>
+
+  <Accordion title="Unknown database">
+    **Error**: `Unknown database 'myapp'`
+
+    **Solutions**:
+    - Verify database name (case-sensitive on Linux)
+    - Create the database if needed
+
+    ```bash
+    # List databases
+    mysql -u root -p -e "SHOW DATABASES;"
+
+    # Create database
+    mysql -u root -p -e "CREATE DATABASE myapp;"
+    
+    # Or in MySQL prompt
+    mysql -u root -p
+    mysql> CREATE DATABASE myapp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+  </Accordion>
+
+  <Accordion title="Too many connections">
+    **Error**: `Too many connections`
+
+    **Solutions**:
+    - Close unused connections
+    - Increase `max_connections` in `my.cnf`
+    - Check for connection leaks
+
+    ```bash
+    # Check current connections
+    mysql -u root -p -e "SHOW PROCESSLIST;"
+
+    # Check max connections
+    mysql -u root -p -e "SHOW VARIABLES LIKE 'max_connections';"
+
+    # Set max connections (requires restart)
+    # Edit /etc/mysql/my.cnf:
+    # [mysqld]
+    # max_connections = 200
+    ```
+  </Accordion>
+
+  <Accordion title="SSL connection errors">
+    **Error**: `SSL connection error`
+
+    **Solutions**:
+    - Use `SslMode=Preferred` or `SslMode=None` for local development
+    - Verify SSL is enabled on the server
+    - Check certificate paths
+
+    ```bash
+    # For local development
+    Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=None
+
+    # Check SSL status
+    mysql -u root -p -e "SHOW VARIABLES LIKE 'have_ssl';"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Check>**Use utf8mb4** for character set (full Unicode support)</Check>
+<Check>**Create dedicated users** - don't use root for applications</Check>
+<Check>**Enable SSL** for remote connections</Check>
+<Check>**Connection pooling** - enabled by default for better performance</Check>
+<Check>**Regular backups** - use `mysqldump` for database backups</Check>
+
+<Warning>
+Avoid:
+- Using the `root` account for application connections
+- Passwordless connections in production
+- Storing credentials in plain text
+- Leaving default ports open to the internet
+</Warning>
+
+## Working with Commands
+
+MySQL works with all Queryly commands:
+
+```bash
+# Connection management
+queryly connect add
+queryly connect list
+queryly connect test MyMySQL
+queryly connect remove MyMySQL
+
+# Schema exploration
+queryly schema list MyMySQL
+queryly schema info MyMySQL users
+queryly schema tree MyMySQL
+
+# Data operations
+queryly data browse MyMySQL users
+queryly data query MyMySQL
+queryly data export MyMySQL users csv
+queryly data export MyMySQL users json
+```
+
+<Card title="Command Reference" icon="terminal" href="/commands/overview">
+  See the complete command reference for all available options
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Learn how to explore MySQL schemas
+  </Card>
+  <Card title="Data Operations" icon="table" href="/commands/data">
+    Browse and query table data
+  </Card>
+  <Card title="Providers Overview" icon="database" href="/providers/overview">
+    Compare all database providers
+  </Card>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Manage your database connections
+  </Card>
+</CardGroup>

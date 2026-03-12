@@ -1,0 +1,116 @@
+---
+title: Introduction
+description: 'Queryly is a fast, developer-friendly CLI tool for managing local databases. Built in pure C# for .NET 8+, it provides an intuitive terminal interface for common database operations without the overhead of heavyweight GUI tools.'
+---
+
+## What is Queryly?
+
+Queryly is your lightweight, cross-platform database companion. It's a CLI tool built for developers who need quick access to their databases without the overhead of heavyweight GUI tools like SQL Server Management Studio or pgAdmin.
+
+Built with .NET 8 and C#, Queryly delivers a fast, beautiful terminal experience powered by Spectre.Console.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Multiple Databases" icon="database">
+    Full support for SQLite, PostgreSQL, MySQL, and SQL Server
+  </Card>
+  <Card title="Connection Management" icon="plug">
+    Save, test, and organize database connections with ease
+  </Card>
+  <Card title="Schema Exploration" icon="diagram-project">
+    Browse tables, view column structures, and explore indexes
+  </Card>
+  <Card title="Data Browsing" icon="table">
+    View and navigate table data with a beautiful terminal UI
+  </Card>
+  <Card title="Query Execution" icon="code">
+    Run custom SQL queries with an interactive query mode
+  </Card>
+  <Card title="Data Export" icon="file-export">
+    Export tables to CSV or JSON formats
+  </Card>
+  <Card title="Cross-Platform" icon="laptop">
+    Works seamlessly on Windows, macOS, and Linux
+  </Card>
+  <Card title="Lightweight" icon="bolt">
+    Fast startup with minimal dependencies
+  </Card>
+</CardGroup>
+
+## Why Use Queryly?
+
+**Lightweight and Fast**  
+No more waiting for heavyweight GUI tools to start. Queryly launches instantly and performs operations quickly.
+
+**Terminal-Focused**  
+Perfect for developers who live in the terminal. Integrates seamlessly with your existing workflow.
+
+**Cross-Platform**  
+Built with .NET 8, Queryly runs natively on Windows, macOS, and Linux without any platform-specific quirks.
+
+**Developer-Friendly**  
+Intuitive commands, beautiful terminal UI with Spectre.Console, and helpful error messages make database management a breeze.
+
+**Open Source**  
+Free to use, modify, and contribute to. Built by developers, for developers.
+
+## Supported Databases
+
+<CardGroup cols={2}>
+  <Card title="SQLite" icon="circle-check">
+    Fully supported with all features
+  </Card>
+  <Card title="SQL Server" icon="circle-check">
+    Fully supported including schema exploration
+  </Card>
+  <Card title="PostgreSQL" icon="circle-check">
+    Fully supported with all features
+  </Card>
+  <Card title="MySQL" icon="circle-check">
+    Fully supported with all features
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+Queryly is built with modern .NET technologies:
+
+- **Language**: C# 12 / .NET 8
+- **Database Access**: ADO.NET, Dapper
+- **Terminal UI**: Spectre.Console
+- **Configuration**: System.Text.Json
+- **Testing**: xUnit, Moq, FluentAssertions
+
+## Architecture
+
+Queryly follows a clean, layered architecture:
+
+```
+┌─────────────────────────────────────┐
+│         CLI Layer                   │
+│    (Commands, UI, Program.cs)       │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│         Core Layer                  │
+│  (Models, Interfaces, Business      │
+│   Logic, Connection Management)     │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│       Providers Layer               │
+│  (Database-specific implementations)│
+│   SQLite, SQL Server, PostgreSQL    │
+└─────────────────────────────────────┘
+```
+
+This separation ensures clean code, testability, and easy addition of new database providers.
+
+## Get Started
+
+Ready to dive in? Follow the [quickstart guide](/quickstart) to add your first database connection and start exploring your data.
+
+<Card title="Quick Start" icon="rocket" href="/quickstart">
+  Get up and running with Queryly in under 5 minutes
+</Card>

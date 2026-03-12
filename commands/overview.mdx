@@ -1,0 +1,152 @@
+---
+title: Commands Overview
+description: Complete reference for all Queryly CLI commands
+---
+
+Queryly provides an intuitive command-line interface for managing database connections, exploring schemas, and working with data across SQLite, PostgreSQL, MySQL, and SQL Server.
+
+## Command Structure
+
+All Queryly commands follow a consistent structure:
+
+```bash
+queryly <category> <subcommand> [arguments] [options]
+```
+
+**Example:**
+```bash
+queryly connect add
+queryly schema list MyDB
+queryly data browse MyDB users
+```
+
+## Command Categories
+
+<CardGroup cols={3}>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Add, list, test, and remove database connections
+  </Card>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Explore database structure, tables, and columns
+  </Card>
+  <Card title="Data Operations" icon="database" href="/commands/data">
+    Browse, query, and export table data
+  </Card>
+</CardGroup>
+
+## Quick Reference
+
+### Connection Management
+
+| Command | Description |
+|---------|-------------|
+| `connect add` | Add a new database connection interactively |
+| `connect list` | Display all saved connections |
+| `connect test <name>` | Test a connection by name |
+| `connect remove <name>` | Remove a saved connection |
+
+### Schema Exploration
+
+| Command | Description |
+|---------|-------------|
+| `schema list <connection>` | List all tables in the database |
+| `schema info <connection> <table>` | Show detailed table structure |
+| `schema tree <connection>` | Display schema as a visual tree |
+
+### Data Operations
+
+| Command | Description |
+|---------|-------------|
+| `data browse <connection> <table>` | View table data with pagination |
+| `data query <connection>` | Interactive SQL query mode |
+| `data export <connection> <table> <format>` | Export table data (csv/json) |
+
+## Getting Help
+
+Run Queryly without arguments to see the built-in help:
+
+```bash
+queryly
+```
+
+This displays the welcome message and all available commands:
+
+```
+  ___                        _       
+ / _ \ _   _   ___  _ __  _   _| |_   _ 
+kindQueryly
+   / _` | | | |/ _ \| '__|| | | | | | | |
+  | (_| | |_| |  __/| |   | |_| | | |_| |
+   \__, |\__,_|\___||_|    \__, |_|\__, |
+      |_|                  |___/   |___/ 
+
+Your local database companion
+Queryly is a cross platform lightweight database manager for developers
+and data enthusiasts. Manage your database connections, explore schemas,
+browse data, and execute queries with ease.
+--------------------------------------------------------
+
+Queryly Commands:
+
+Connection Management:
+  connect list    - List all connections
+  connect add     - Add a new connection
+  connect test <name> - Test a connection by name
+  connect remove <name> - Remove a connection by name
+
+Schema Exploration:
+  schema list <connection-name> - List all tables
+  schema info <connection-name> <table-name> - Show table info
+  schema tree <connection-name> - Display schema as tree
+
+Data Operations:
+  data browse <connection-name> <table>       - Browse table data
+  data query <connection-name>                - Execute SQL query
+  data export <connection-name> <table> <format> - Export (csv/json)
+```
+
+## Common Workflows
+
+### First-Time Setup
+
+1. Add your first database connection
+2. List tables to explore the schema
+3. Browse table data
+
+```bash
+# Step 1: Add connection
+queryly connect add
+
+# Step 2: Explore schema
+queryly schema list MyDB
+
+# Step 3: View data
+queryly data browse MyDB users
+```
+
+### Daily Development
+
+```bash
+# Check saved connections
+queryly connect list
+
+# Run quick queries
+queryly data query MyDB
+
+# Export data for analysis
+queryly data export MyDB orders csv
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Connect Command" icon="plug" href="/commands/connect">
+    Learn how to manage database connections
+  </Card>
+  <Card title="Schema Command" icon="sitemap" href="/commands/schema">
+    Explore database structure and tables
+  </Card>
+  <Card title="Data Command" icon="database" href="/commands/data">
+    Browse and query your data
+  </Card>
+</CardGroup>

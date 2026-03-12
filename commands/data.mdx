@@ -1,0 +1,550 @@
+---
+title: Data Operations
+description: Browse, query, and export table data with the data command
+---
+
+The `data` command provides powerful tools for viewing, querying, and exporting your database data. Browse tables with pagination, run interactive SQL queries, and export data to CSV or JSON formats.
+
+## Subcommands
+
+### data browse
+
+Browse table data with interactive pagination (50 rows per page).
+
+```bash
+queryly data browse <connection> <table>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+<ParamField path="table" type="string" required>
+  Name of the table to browse
+</ParamField>
+
+**Example:**
+
+```bash
+$ queryly data browse MyApp users
+Browsing Table: users (1,234 rows, 25 pages)
+
+┌─────┬──────────────┬──────────────────────┬─────────────────────┬───────────┐
+│ id  │ name         │ email                │ created_at          │ is_active │
+├─────┼──────────────┼──────────────────────┼─────────────────────┼───────────┤
+│ 1   │ Alice Smith  │ alice@example.com    │ 2024-01-15 10:30:00 │ 1         │
+│ 2   │ Bob Jones    │ bob@example.com      │ 2024-01-16 14:20:00 │ 1         │
+│ 3   │ Carol Lee    │ carol@example.com    │ 2024-01-17 09:15:00 │ 0         │
+│ ... │ ...          │ ...                  │ ...                 │ ...       │
+│ 50  │ Emma Wilson  │ emma@example.com     │ 2024-02-10 16:45:00 │ 1         │
+└─────┴──────────────┴──────────────────────┴─────────────────────┴───────────┘
+
+Showing 50 of 1,234 row(s) | Query time: 12.34ms
+──────────────────────────────────────────────────────────────
+ Page 1 of 25    Rows 1–50 of 1,234
+──────────────────────────────────────────────────────────────
+Commands:  [N]ext  •  [P]rev  •  [G]o to page  •  [Q]uit
+──────────────────────────────────────────────────────────────
+
+Command>
+```
+
+**Navigation Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `n` | Go to next page |
+| `p` | Go to previous page |
+| `g` or `go` | Go to specific page number (prompts for page) |
+| `h` or `help` | Show help menu |
+| `q` | Quit and return to terminal |
+
+**Interactive Navigation:**
+
+```bash
+# Go to next page
+Command> n
+# Now viewing page 2...
+
+# Go to previous page
+Command> p
+# Back to page 1...
+
+# Jump to specific page
+Command> g
+Enter page number (1-25): 10
+# Now viewing page 10...
+
+# Quit browsing
+Command> q
+Exited browse mode.
+```
+
+**Data Display:**
+- Shows up to 50 rows per page
+- NULL values displayed as <span style={{color: 'gray'}}>NULL</span>
+- Long text values truncated to 50 characters with `...`
+- Automatic column width adjustment
+- Row numbers and totals in footer
+
+<Note>
+  Browse mode clears the screen for each page to provide a clean viewing experience. Use arrow keys aren't supported - type commands instead.
+</Note>
+
+<Tip>
+  **Performance**: The first page loads instantly. Jumping to later pages requires offsetting rows, which may be slower on very large tables.
+</Tip>
+
+---
+
+### data query
+
+Interactive SQL query mode with real-time execution and formatted results.
+
+```bash
+queryly data query <connection>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+**Example Session:**
+
+```bash
+$ queryly data query MyApp
+Query Mode - MyApp
+Enter SQL queries. Type 'exit' to quit.
+
+SQL> SELECT COUNT(*) FROM users
+┌────────────┐
+│ COUNT(*)   │
+├────────────┤
+│ 1234       │
+└────────────┘
+Showing 1 of 1 row(s) | Query time: 2.34ms
+
+SQL> SELECT name, email FROM users WHERE is_active = 1 LIMIT 5
+┌──────────────┬──────────────────────┐
+│ name         │ email                │
+├──────────────┼──────────────────────┤
+│ Alice Smith  │ alice@example.com    │
+│ Bob Jones    │ bob@example.com      │
+│ David Kim    │ david@example.com    │
+│ Emma Wilson  │ emma@example.com     │
+│ Frank Chen   │ frank@example.com    │
+└──────────────┴──────────────────────┘
+Showing 5 of 5 row(s) | Query time: 1.23ms
+
+SQL> SELECT 
+     category_id, 
+     COUNT(*) as product_count,
+     AVG(price) as avg_price
+     FROM products 
+     GROUP BY category_id
+┌─────────────┬───────────────┬───────────┐
+│ category_id │ product_count │ avg_price │
+├─────────────┼───────────────┼───────────┤
+│ 1           │ 45            │ 29.99     │
+│ 2           │ 32            │ 54.99     │
+│ 3           │ 18            │ 19.99     │
+└─────────────┴───────────────┴───────────┘
+Showing 3 of 3 row(s) | Query time: 8.45ms
+
+SQL> exit
+Exited query mode.
+```
+
+**Query Features:**
+
+<Tabs>
+  <Tab title="SELECT Queries">
+    Run any SELECT query to retrieve data:
+
+    ```sql
+    -- Simple select
+    SELECT * FROM users
+    
+    -- With WHERE clause
+    SELECT name, email FROM users WHERE is_active = 1
+    
+    -- With JOINs
+    SELECT u.name, o.total 
+    FROM users u 
+    JOIN orders o ON u.id = o.user_id
+    
+    -- With aggregations
+    SELECT COUNT(*), AVG(total) FROM orders
+    
+    -- With GROUP BY
+    SELECT status, COUNT(*) 
+    FROM orders 
+    GROUP BY status
+    ```
+
+    Results are formatted in a clean table with:
+    - Column headers
+    - Aligned data
+    - Row count
+    - Execution time in milliseconds
+  </Tab>
+
+  <Tab title="INSERT/UPDATE/DELETE">
+    Modify data with INSERT, UPDATE, or DELETE:
+
+    ```sql
+    -- Insert new row
+    INSERT INTO users (name, email) 
+    VALUES ('John Doe', 'john@example.com')
+    
+    -- Update existing rows
+    UPDATE users 
+    SET is_active = 0 
+    WHERE id = 5
+    
+    -- Delete rows
+    DELETE FROM users 
+    WHERE created_at < '2023-01-01'
+    ```
+
+    <Warning>
+      **Data modification queries are executed immediately and cannot be undone.** Make sure you're connected to the right database before running UPDATE or DELETE commands.
+    </Warning>
+
+    Success output:
+    ```
+    No data found.
+    Query time: 5.23ms
+    ```
+  </Tab>
+
+  <Tab title="CREATE/ALTER/DROP">
+    Run DDL (Data Definition Language) commands:
+
+    ```sql
+    -- Create table
+    CREATE TABLE products (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      price DECIMAL(10,2)
+    )
+    
+    -- Add column
+    ALTER TABLE users ADD COLUMN phone TEXT
+    
+    -- Create index
+    CREATE INDEX idx_email ON users(email)
+    
+    -- Drop table
+    DROP TABLE old_table
+    ```
+
+    <Note>
+      DDL commands execute successfully but don't return result sets. You'll see:
+      ```
+      No data found.
+      Query time: 15.67ms
+      ```
+    </Note>
+  </Tab>
+
+  <Tab title="Multi-line Queries">
+    While Queryly's query mode is line-based, you can write multi-line SQL by using your terminal's line continuation:
+
+    ```sql
+    SQL> SELECT 
+         u.name, 
+         COUNT(o.id) as order_count, 
+         SUM(o.total) as total_spent 
+         FROM users u 
+         LEFT JOIN orders o ON u.id = o.user_id 
+         GROUP BY u.id 
+         ORDER BY total_spent DESC 
+         LIMIT 10
+    ```
+
+    <Tip>
+      For complex queries, consider writing them in a text editor first, then paste them into the SQL prompt.
+    </Tip>
+  </Tab>
+</Tabs>
+
+**Error Handling:**
+
+```sql
+SQL> SELECT * FROM nonexistent_table
+✗ Error: no such table: nonexistent_table
+
+SQL> SELECT invalid syntax
+✗ Error: near "syntax": syntax error
+```
+
+Errors are displayed in red and don't exit query mode - you can immediately try again.
+
+**Exiting:**
+
+```sql
+SQL> exit
+Exited query mode.
+```
+
+Type `exit` at the SQL prompt to return to your terminal.
+
+---
+
+### data export
+
+Export entire tables to CSV or JSON format.
+
+```bash
+queryly data export <connection> <table> <format>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+<ParamField path="table" type="string" required>
+  Name of the table to export
+</ParamField>
+
+<ParamField path="format" type="enum" default="csv">
+  Export format:
+  - `csv` - Comma-separated values
+  - `json` - JSON array of objects
+</ParamField>
+
+**Examples:**
+
+<CodeGroup>
+```bash CSV Export
+$ queryly data export MyApp users csv
+Exporting users...
+✓ Exported to users_20240315_143022.csv (1,234 rows)
+```
+
+```bash JSON Export
+$ queryly data export MyApp users json
+Exporting users...
+✓ Exported to users_20240315_143045.json (1,234 rows)
+```
+
+```bash Default Format
+$ queryly data export MyApp products
+Exporting products...
+✓ Exported to products_20240315_143101.csv (890 rows)
+```
+</CodeGroup>
+
+**Output Files:**
+
+Files are saved in your current directory with automatic timestamps:
+
+```
+<table>_YYYYMMDD_HHMMSS.<format>
+```
+
+Examples:
+- `users_20240315_143022.csv`
+- `orders_20240315_143045.json`
+- `products_20240315_143101.csv`
+
+**CSV Format:**
+
+```csv
+id,name,email,created_at,is_active
+1,Alice Smith,alice@example.com,2024-01-15 10:30:00,1
+2,Bob Jones,bob@example.com,2024-01-16 14:20:00,1
+3,Carol Lee,carol@example.com,2024-01-17 09:15:00,0
+```
+
+**CSV Features:**
+- Header row with column names
+- Proper escaping of commas, quotes, and newlines
+- NULL values exported as empty strings
+- Text values with special characters wrapped in quotes
+
+**JSON Format:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Alice Smith",
+    "email": "alice@example.com",
+    "created_at": "2024-01-15 10:30:00",
+    "is_active": 1
+  },
+  {
+    "id": 2,
+    "name": "Bob Jones",
+    "email": "bob@example.com",
+    "created_at": "2024-01-16 14:20:00",
+    "is_active": 1
+  },
+  {
+    "id": 3,
+    "name": "Carol Lee",
+    "email": "carol@example.com",
+    "created_at": "2024-01-17 09:15:00",
+    "is_active": 0
+  }
+]
+```
+
+**JSON Features:**
+- Array of objects (one per row)
+- Indented for readability
+- NULL values exported as `null`
+- Numbers preserved as numeric types
+- Dates exported as strings
+
+<Warning>
+  **Large Tables**: Exporting very large tables (millions of rows) can take time and produce large files. Monitor disk space and consider filtering data with a custom query first.
+</Warning>
+
+<Tip>
+  **Custom Exports**: For filtered exports, use `data query` to run a SELECT query and manually save results, or pipe query output to a file using your shell.
+</Tip>
+
+## Advanced Usage
+
+### Filtering Before Export
+
+To export only specific data, use query mode:
+
+```bash
+$ queryly data query MyApp
+SQL> SELECT * FROM orders WHERE status = 'completed' AND created_at > '2024-01-01'
+# Copy results manually or use shell redirection:
+
+# Better: Use custom SQL in your application
+```
+
+### Analyzing Query Performance
+
+Use query mode to test performance:
+
+```bash
+SQL> SELECT COUNT(*) FROM large_table
+# Query time: 1250.45ms
+
+SQL> SELECT COUNT(*) FROM large_table WHERE indexed_column = 'value'
+# Query time: 5.23ms  (much faster with index!)
+```
+
+### Exporting Multiple Tables
+
+```bash
+# Export all main tables
+queryly data export MyDB users csv
+queryly data export MyDB orders csv
+queryly data export MyDB products csv
+```
+
+### Database-Specific SQL
+
+<Tabs>
+  <Tab title="SQLite">
+    ```sql
+    -- SQLite-specific features
+    SELECT * FROM sqlite_master WHERE type='table'
+    
+    -- Date functions
+    SELECT date('now'), datetime('now', '+1 day')
+    
+    -- AUTOINCREMENT
+    SELECT last_insert_rowid()
+    ```
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    ```sql
+    -- PostgreSQL-specific features
+    SELECT * FROM pg_tables WHERE schemaname = 'public'
+    
+    -- JSON queries
+    SELECT data->>'name' FROM users WHERE data @> '{"active": true}'
+    
+    -- Array functions
+    SELECT array_agg(name) FROM users
+    
+    -- Window functions
+    SELECT name, ROW_NUMBER() OVER (ORDER BY created_at) FROM users
+    ```
+  </Tab>
+
+  <Tab title="MySQL">
+    ```sql
+    -- MySQL-specific features
+    SHOW TABLES
+    
+    -- Date functions
+    SELECT NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY)
+    
+    -- String functions
+    SELECT CONCAT(first_name, ' ', last_name) FROM users
+    
+    -- Limit with offset
+    SELECT * FROM users LIMIT 10 OFFSET 20
+    ```
+  </Tab>
+
+  <Tab title="SQL Server">
+    ```sql
+    -- SQL Server-specific features
+    SELECT * FROM sys.tables
+    
+    -- TOP clause
+    SELECT TOP 10 * FROM users ORDER BY created_at DESC
+    
+    -- Date functions
+    SELECT GETDATE(), DATEADD(day, 1, GETDATE())
+    
+    -- String functions
+    SELECT CONCAT(first_name, ' ', last_name) FROM users
+    ```
+  </Tab>
+</Tabs>
+
+## Error Messages
+
+| Error | Meaning | Solution |
+|-------|---------|----------|
+| `Connection 'name' not found` | No saved connection with that name | Use `connect list` to verify connection exists |
+| `No data found` | Query returned no rows or was DDL | Normal for empty results or CREATE/UPDATE/DELETE |
+| `Query failed: <error>` | SQL syntax error or invalid table/column | Check your SQL syntax and table/column names |
+| `Unsupported format: <format>` | Invalid export format specified | Use `csv` or `json` only |
+| `Already on first/last page` | Can't navigate beyond page boundaries | You're at the start or end of the data |
+
+## Performance Tips
+
+<Note>
+  **Browse Performance**: Uses `LIMIT` and `OFFSET` for pagination. First page is instant, but jumping to page 1000 of a large table requires skipping many rows.
+</Note>
+
+<Tip>
+  **Query Performance**: 
+  - Use `WHERE` clauses to filter data
+  - Add `LIMIT` to large queries for faster results
+  - Create indexes on frequently queried columns
+  - Monitor execution times shown after each query
+</Tip>
+
+<Warning>
+  **Export Performance**: Exporting large tables (millions of rows) loads all data into memory before writing. For huge exports, consider:
+  - Exporting in chunks with filtered queries
+  - Using database-specific export tools
+  - Scheduling exports during off-peak hours
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Use `schema info` to understand table structure before querying
+  </Card>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Manage multiple database connections for different environments
+  </Card>
+</CardGroup>

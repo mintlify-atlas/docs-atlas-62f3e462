@@ -1,0 +1,356 @@
+---
+title: Connection Management
+description: Add, list, test, and remove database connections with the connect command
+---
+
+The `connect` command manages your database connections. Queryly stores connection information securely in `~/.queryly/connections.json` (or `C:\Users\<username>\.queryly\` on Windows).
+
+## Subcommands
+
+### connect add
+
+Add a new database connection interactively. The connection is tested before saving.
+
+```bash
+queryly connect add
+```
+
+**Interactive Prompts:**
+
+<ParamField path="name" type="string" required>
+  Friendly name for the connection (e.g., "LocalDB", "ProductionDB")
+</ParamField>
+
+<ParamField path="type" type="enum" required>
+  Database type selection:
+  - SQLite
+  - PostgreSQL
+  - MySQL
+  - SQL Server
+</ParamField>
+
+<ParamField path="connectionString" type="string" required>
+  Database-specific connection string (see [Connection Strings](#connection-strings))
+</ParamField>
+
+**Example:**
+
+<CodeGroup>
+```bash SQLite
+$ queryly connect add
+Connection name: MyApp
+Select database type: SQLite
+Connection string: Data Source=./myapp.db
+✓ Connection successful!
+✓ Saved connection 'MyApp'
+```
+
+```bash PostgreSQL
+$ queryly connect add
+Connection name: DevDB
+Select database type: PostgreSQL
+Connection string: Host=localhost;Database=myapp;Username=postgres;Password=mypass
+✓ Connection successful!
+✓ Saved connection 'DevDB'
+```
+
+```bash SQL Server
+$ queryly connect add
+Connection name: LocalSQL
+Select database type: SQL Server
+Connection string: Server=localhost;Database=myapp;User Id=sa;Password=Pass123;TrustServerCertificate=True
+✓ Connection successful!
+✓ Saved connection 'LocalSQL'
+```
+</CodeGroup>
+
+<Note>
+  The connection is automatically tested before saving. If the test fails, the connection will not be saved.
+</Note>
+
+---
+
+### connect list
+
+Display all saved database connections with their metadata.
+
+```bash
+queryly connect list
+```
+
+**Output:**
+
+```
+┌─────────────┬──────────────┬──────────────────┬──────────┐
+│ Name        │ Type         │ Last Used        │ Favorite │
+├─────────────┼──────────────┼──────────────────┼──────────┤
+│ MyApp       │ SQLite       │ 2024-03-15 14:30 │          │
+│ DevDB       │ PostgreSQL   │ 2024-03-15 10:15 │ ⭐       │
+│ LocalSQL    │ SQLServer    │ 2024-03-14 16:45 │          │
+└─────────────┴──────────────┴──────────────────┴──────────┘
+```
+
+**Columns:**
+- **Name**: The friendly name you assigned
+- **Type**: Database type (SQLite, PostgreSQL, MySQL, SQLServer)
+- **Last Used**: Timestamp when the connection was last accessed
+- **Favorite**: Star (⭐) indicates favorited connections
+
+<Tip>
+  If you have no connections saved, you'll see a helpful message:
+  ```
+  No connections found.
+  Use queryly connect add to add a connection.
+  ```
+</Tip>
+
+---
+
+### connect test
+
+Test an existing connection to verify it's still working.
+
+```bash
+queryly connect test <name>
+```
+
+<ParamField path="name" type="string" required>
+  The name of the connection to test
+</ParamField>
+
+**Examples:**
+
+```bash
+# Test a connection
+$ queryly connect test MyApp
+Testing connection...
+✓ Connection successful!
+```
+
+```bash
+# Test fails if connection is invalid
+$ queryly connect test OldDB
+Testing connection...
+✗ Connection test failed!
+```
+
+```bash
+# Connection not found
+$ queryly connect test NonExistent
+✗ Connection 'NonExistent' not found.
+```
+
+<Warning>
+  Connection tests open a real connection to your database. Make sure the database is accessible and credentials are current.
+</Warning>
+
+---
+
+### connect remove
+
+Remove a saved database connection after confirmation.
+
+```bash
+queryly connect remove <name>
+```
+
+<ParamField path="name" type="string" required>
+  The name of the connection to remove
+</ParamField>
+
+**Example:**
+
+```bash
+$ queryly connect remove OldDB
+Connection: OldDB
+Type: SQLite
+Last used: 2024-01-10 08:30
+
+Remove 'OldDB'? (yes/no): yes
+✓ Removed connection 'OldDB'
+```
+
+**Cancellation:**
+
+```bash
+$ queryly connect remove MyApp
+Connection: MyApp
+Type: SQLite
+Last used: 2024-03-15 14:30
+
+Remove 'MyApp'? (yes/no): no
+Cancelled.
+```
+
+<Note>
+  You'll be shown connection details and asked to confirm before deletion. Type `yes` to confirm or `no` to cancel.
+</Note>
+
+## Connection Strings
+
+Connection string formats vary by database type:
+
+<Tabs>
+  <Tab title="SQLite">
+    **Format:**
+    ```
+    Data Source=path/to/database.db
+    ```
+
+    **Examples:**
+    ```bash
+    # Local file
+    Data Source=./mydb.db
+    Data Source=/home/user/databases/app.db
+    
+    # In-memory database
+    Data Source=:memory:
+    
+    # Read-only mode
+    Data Source=mydb.db;Mode=ReadOnly
+    ```
+
+    **Supported Features:**
+    - ✅ Connection management
+    - ✅ Schema exploration
+    - ✅ Table browsing
+    - ✅ Query execution
+    - ✅ Data export
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    **Format:**
+    ```
+    Host=localhost;Database=mydb;Username=postgres;Password=secret
+    ```
+
+    **Examples:**
+    ```bash
+    # Local database
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass
+    
+    # With port
+    Host=localhost;Port=5432;Database=myapp;Username=postgres;Password=mypass
+    
+    # With SSL
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Require
+    
+    # Remote database
+    Host=db.example.com;Database=production;Username=admin;Password=secure123
+    ```
+
+    **Supported Features:**
+    - ✅ Connection management
+    - ✅ Schema exploration
+    - ✅ Table browsing
+    - ✅ Query execution
+    - ✅ Data export
+  </Tab>
+
+  <Tab title="MySQL">
+    **Format:**
+    ```
+    Server=localhost;Database=mydb;User=root;Password=secret
+    ```
+
+    **Examples:**
+    ```bash
+    # Local database
+    Server=localhost;Database=myapp;User=root;Password=mypass
+    
+    # With port
+    Server=localhost;Port=3306;Database=myapp;User=root;Password=mypass
+    
+    # Remote database
+    Server=db.example.com;Database=production;User=admin;Password=secure123
+    
+    # With SSL
+    Server=localhost;Database=myapp;User=root;Password=mypass;SslMode=Required
+    ```
+
+    **Supported Features:**
+    - ✅ Connection management
+    - ✅ Schema exploration
+    - ✅ Table browsing
+    - ✅ Query execution
+    - ✅ Data export
+  </Tab>
+
+  <Tab title="SQL Server">
+    **Format:**
+    ```
+    Server=localhost;Database=mydb;User Id=sa;Password=secret;TrustServerCertificate=True
+    ```
+
+    **Examples:**
+    ```bash
+    # Local database
+    Server=localhost;Database=myapp;User Id=sa;Password=Pass123;TrustServerCertificate=True
+    
+    # LocalDB
+    Server=(localdb)\MSSQLLocalDB;Database=myapp;Integrated Security=true
+    
+    # With instance name
+    Server=localhost\SQLEXPRESS;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+    
+    # Remote database
+    Server=db.example.com;Database=production;User Id=admin;Password=secure123;TrustServerCertificate=True
+    
+    # Windows Authentication
+    Server=localhost;Database=myapp;Integrated Security=true
+    ```
+
+    **Supported Features:**
+    - ✅ Connection management
+    - ✅ Schema exploration (with schema support)
+    - ✅ Table browsing
+    - ✅ Query execution
+    - ✅ Data export
+  </Tab>
+</Tabs>
+
+## Configuration Storage
+
+Connections are stored in a JSON file:
+
+**Location:**
+- **macOS/Linux:** `~/.queryly/connections.json`
+- **Windows:** `C:\Users\<username>\.queryly\connections.json`
+
+**Example structure:**
+
+```json
+{
+  "connections": [
+    {
+      "id": "abc123...",
+      "name": "LocalDB",
+      "dbType": "SQLite",
+      "connectionString": "Data Source=./myapp.db",
+      "lastUsed": "2024-03-15T14:30:00Z",
+      "isFavorite": false,
+      "metadata": {}
+    }
+  ],
+  "activeConnectionId": "abc123..."
+}
+```
+
+## Error Messages
+
+| Error | Meaning | Solution |
+|-------|---------|----------|
+| `Connection test failed` | Database is unreachable or credentials are wrong | Verify connection string, check database is running |
+| `Connection 'name' not found` | No connection exists with that name | Use `connect list` to see available connections |
+| `Invalid data command` | Incorrect subcommand syntax | Check command format: `connect <subcommand>` |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Schema" icon="sitemap" href="/commands/schema">
+    Use `schema` commands to explore your database structure
+  </Card>
+  <Card title="Browse Data" icon="database" href="/commands/data">
+    Use `data` commands to view and query your data
+  </Card>
+</CardGroup>

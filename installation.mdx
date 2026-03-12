@@ -1,0 +1,185 @@
+---
+title: Installation
+description: 'Learn how to install and set up Queryly on your system. Build from source using .NET 8.0 SDK and verify your installation.'
+---
+
+## Requirements
+
+Before installing Queryly, ensure you have the following:
+
+<CardGroup cols={1}>
+  <Card title=".NET 8.0 SDK or later" icon="microsoft">
+    Required to build and run Queryly
+  </Card>
+</CardGroup>
+
+### Verify .NET Installation
+
+Check if you have .NET 8.0 SDK installed:
+
+```bash
+dotnet --version
+```
+
+You should see version 8.0.0 or higher. If not, download it from [dotnet.microsoft.com](https://dotnet.microsoft.com/download).
+
+## Build from Source
+
+Currently, Queryly is installed by building from source. A global .NET tool package is coming soon.
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Queryly repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/Ayine-nongre/queryly.git
+    cd queryly
+    ```
+  </Step>
+
+  <Step title="Build the project">
+    Build Queryly using the .NET CLI:
+    
+    ```bash
+    dotnet build
+    ```
+    
+    This will restore dependencies and compile the project. You should see a successful build message.
+  </Step>
+
+  <Step title="Run Queryly">
+    Run Queryly using the dotnet run command:
+    
+    ```bash
+    dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+    ```
+    
+    You should see the Queryly banner and help information:
+    
+    ```
+      ___                        _       
+     / _ \ _   _  ___ _ __ _   _| |_   _ 
+    | | | | | | |/ _ \ '__| | | | | | | |
+    | |_| | |_| |  __/ |  | |_| | | |_| |
+     \__\_\\__,_|\___|_|   \__, |_|\__, |
+                           |___/   |___/ 
+    
+    Your local database companion
+    Queryly is a cross platform lightweight database manager for developers
+    and data enthusiasts. Manage your database connections, explore schemas,
+    browse data, and execute queries with ease.
+    --------------------------------------------------------
+    ```
+  </Step>
+
+  <Step title="Create an alias (optional)">
+    For convenience, create a shell alias to run Queryly easily:
+    
+    **Bash/Zsh** (~/.bashrc or ~/.zshrc):
+    ```bash
+    alias queryly="dotnet run --project /path/to/queryly/src/Queryly.CLI/Queryly.CLI.csproj"
+    ```
+    
+    **PowerShell** (Microsoft.PowerShell_profile.ps1):
+    ```powershell
+    function queryly { dotnet run --project C:\path\to\queryly\src\Queryly.CLI\Queryly.CLI.csproj $args }
+    ```
+    
+    After adding the alias, reload your shell configuration or restart your terminal.
+  </Step>
+</Steps>
+
+## Install as Global Tool (Coming Soon)
+
+<Note>
+  In a future release, Queryly will be available as a .NET global tool for easier installation.
+</Note>
+
+The future installation method will be:
+
+```bash
+dotnet tool install -g queryly
+```
+
+Once installed as a global tool, you'll be able to run `queryly` directly from anywhere:
+
+```bash
+queryly connect list
+queryly schema list MyDB
+```
+
+## Verify Installation
+
+Verify that Queryly is working correctly by running the help command:
+
+```bash
+# If using the full command
+dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+
+# Or if you created an alias
+queryly
+```
+
+You should see the Queryly banner and a list of available commands.
+
+## Configuration Location
+
+Queryly stores its configuration in your home directory:
+
+<CodeGroup>
+  ```bash Windows
+  C:\Users\<username>\.queryly\
+  ```
+
+  ```bash macOS/Linux
+  ~/.queryly/
+  ```
+</CodeGroup>
+
+**Configuration files:**
+- `connections.json` - Stores your saved database connections
+
+This directory is automatically created when you add your first connection.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="dotnet command not found">
+    **Problem**: The `dotnet` command is not recognized.
+    
+    **Solution**: Install the .NET 8.0 SDK from [dotnet.microsoft.com](https://dotnet.microsoft.com/download). After installation, restart your terminal and verify with `dotnet --version`.
+  </Accordion>
+
+  <Accordion title="Build fails with dependency errors">
+    **Problem**: Build fails with package restoration errors.
+    
+    **Solution**: Clear your NuGet cache and restore:
+    ```bash
+    dotnet nuget locals all --clear
+    dotnet restore
+    dotnet build
+    ```
+  </Accordion>
+
+  <Accordion title="Permission denied errors">
+    **Problem**: Permission errors when running on Linux/macOS.
+    
+    **Solution**: Ensure you have read/write permissions in the project directory:
+    ```bash
+    chmod -R u+rwx /path/to/queryly
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that Queryly is installed, learn how to use it:
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Add your first database connection and explore your data
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/overview">
+    Learn all available Queryly commands
+  </Card>
+</CardGroup>

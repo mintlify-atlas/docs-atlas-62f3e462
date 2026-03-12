@@ -1,0 +1,354 @@
+---
+title: Schema Exploration
+description: Explore database structure, tables, and columns with the schema command
+---
+
+The `schema` command provides powerful tools to explore your database structure without writing SQL. View tables, inspect column definitions, and visualize your entire schema as a tree.
+
+## Subcommands
+
+### schema list
+
+List all tables in a database connection with row counts.
+
+```bash
+queryly schema list <connection>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+**Example:**
+
+```bash
+$ queryly schema list MyApp
+Fetching schema...
+┌──────────────────┬───────────┐
+│ Table Name       │      Rows │
+├──────────────────┼───────────┤
+│ users            │     1,234 │
+│ orders           │     5,678 │
+│ products         │       890 │
+│ categories       │        45 │
+└──────────────────┴───────────┘
+
+Total: 4 table(s)
+```
+
+**Output Details:**
+- **Table Name**: Name of each table in the database
+- **Rows**: Total row count (formatted with thousands separators)
+- **Total**: Summary count of all tables
+
+<Note>
+  Row counts are retrieved efficiently using `COUNT(*)` queries. For very large tables, this may take a moment.
+</Note>
+
+**No Tables Found:**
+
+```bash
+$ queryly schema list EmptyDB
+Fetching schema...
+! No tables found in the database.
+```
+
+---
+
+### schema info
+
+Show detailed information about a specific table including all columns, data types, nullability, and primary keys.
+
+```bash
+queryly schema info <connection> <table>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+<ParamField path="table" type="string" required>
+  Name of the table to inspect
+</ParamField>
+
+**Example:**
+
+```bash
+$ queryly schema info MyApp users
+Fetching table info...
+Table: users
+
+Columns:
+┌─────────────┬──────────────┬─────────────┬────────────────┬───────────────┐
+│ Column Name │ Data Type    │ Is Nullable │ Is Primary Key │ Default Value │
+├─────────────┼──────────────┼─────────────┼────────────────┼───────────────┤
+│ id          │ INTEGER      │     No      │       PK       │               │
+│ name        │ TEXT         │     No      │                │               │
+│ email       │ TEXT         │     No      │                │               │
+│ created_at  │ DATETIME     │     Yes     │                │ CURRENT_TIME  │
+│ is_active   │ BOOLEAN      │     Yes     │                │ 1             │
+└─────────────┴──────────────┴─────────────┴────────────────┴───────────────┘
+
+Total: 5 column(s)
+```
+
+**Column Information:**
+
+| Field | Description |
+|-------|-------------|
+| **Column Name** | The name of the column |
+| **Data Type** | Database-specific data type (INTEGER, TEXT, VARCHAR, etc.) |
+| **Is Nullable** | Whether the column accepts NULL values (Yes/No) |
+| **Is Primary Key** | Marked with "PK" if column is part of the primary key |
+| **Default Value** | Default value assigned to new rows (empty if none) |
+
+<Tabs>
+  <Tab title="SQLite">
+    Common SQLite data types:
+    - `INTEGER` - Whole numbers
+    - `TEXT` - Text strings
+    - `REAL` - Floating point numbers
+    - `BLOB` - Binary data
+    - `NUMERIC` - General numeric
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    Common PostgreSQL data types:
+    - `integer`, `bigint`, `smallint` - Integer types
+    - `varchar`, `text`, `char` - Text types
+    - `boolean` - True/false values
+    - `timestamp`, `date`, `time` - Date/time types
+    - `json`, `jsonb` - JSON data
+    - `uuid` - Universally unique identifiers
+  </Tab>
+
+  <Tab title="MySQL">
+    Common MySQL data types:
+    - `int`, `bigint`, `tinyint` - Integer types
+    - `varchar`, `text`, `char` - Text types
+    - `decimal`, `float`, `double` - Numeric types
+    - `datetime`, `timestamp`, `date` - Date/time types
+    - `json` - JSON data
+    - `enum` - Enumerated values
+  </Tab>
+
+  <Tab title="SQL Server">
+    Common SQL Server data types:
+    - `int`, `bigint`, `smallint` - Integer types
+    - `nvarchar`, `varchar`, `nchar` - Text types
+    - `decimal`, `float`, `money` - Numeric types
+    - `datetime`, `datetime2`, `date` - Date/time types
+    - `bit` - Boolean values
+    - `uniqueidentifier` - GUIDs
+  </Tab>
+</Tabs>
+
+<Warning>
+  Table names are case-sensitive on some database systems (PostgreSQL, MySQL on Linux). Use the exact casing shown in `schema list`.
+</Warning>
+
+---
+
+### schema tree
+
+Display the entire database schema as a hierarchical tree showing all tables and their columns.
+
+```bash
+queryly schema tree <connection>
+```
+
+<ParamField path="connection" type="string" required>
+  Name of the saved database connection
+</ParamField>
+
+**Example:**
+
+```bash
+$ queryly schema tree MyApp
+Loading schema...
+MyApp (SQLite)
+├── users (1,234 rows)
+│   ├── id INTEGER (PK)
+│   ├── name TEXT
+│   ├── email TEXT
+│   ├── created_at DATETIME (nullable)
+│   └── is_active BOOLEAN (nullable)
+├── orders (5,678 rows)
+│   ├── id INTEGER (PK)
+│   ├── user_id INTEGER
+│   ├── total DECIMAL
+│   ├── status VARCHAR (nullable)
+│   └── created_at TIMESTAMP
+├── products (890 rows)
+│   ├── id INTEGER (PK)
+│   ├── name VARCHAR
+│   ├── price DECIMAL
+│   ├── category_id INTEGER (nullable)
+│   └── description TEXT (nullable)
+└── categories (45 rows)
+    ├── id INTEGER (PK)
+    └── name VARCHAR
+```
+
+**Tree Structure:**
+- **Root**: Connection name and database type
+- **Tables**: Each table shows name and row count
+- **Columns**: Each column shows:
+  - Column name
+  - Data type
+  - `(PK)` marker for primary keys
+  - `(nullable)` marker for nullable columns
+
+<Tip>
+  The tree view is perfect for:
+  - Getting a quick overview of your entire schema
+  - Understanding table relationships by spotting foreign key patterns
+  - Finding all nullable columns at a glance
+  - Identifying primary keys across all tables
+</Tip>
+
+**Large Schemas:**
+
+For databases with many tables or columns, the tree can be quite tall. The output scrolls naturally in your terminal.
+
+```bash
+$ queryly schema tree ProductionDB
+Loading schema...
+ProductionDB (PostgreSQL)
+├── table_1 (10,000 rows)
+│   ├── ...
+├── table_2 (25,000 rows)
+│   ├── ...
+├── table_3 (5,000 rows)
+│   ├── ...
+# ... and so on
+```
+
+## Usage Examples
+
+### Exploring a New Database
+
+```bash
+# Step 1: See what tables exist
+queryly schema list MyDB
+
+# Step 2: Inspect specific table structure
+queryly schema info MyDB users
+
+# Step 3: View full schema tree
+queryly schema tree MyDB
+```
+
+### Finding Primary Keys
+
+```bash
+# Quick way to see all primary keys across tables
+queryly schema tree MyDB
+# Look for (PK) markers in the output
+```
+
+### Checking Table Structure Before Queries
+
+```bash
+# See exact column names and types before writing SQL
+queryly schema info MyDB orders
+
+# Then write your query with confidence
+queryly data query MyDB
+SQL> SELECT id, user_id, total FROM orders WHERE total > 100
+```
+
+### Comparing Databases
+
+<CodeGroup>
+```bash Development
+queryly schema tree DevDB
+# Compare output...
+```
+
+```bash Production
+queryly schema tree ProdDB
+# ...to ensure schemas match
+```
+</CodeGroup>
+
+## Database-Specific Behavior
+
+<Tabs>
+  <Tab title="SQLite">
+    **Schema Detection:**
+    - Lists all user-created tables (excludes `sqlite_*` system tables)
+    - Automatically detects primary keys from table definitions
+    - Shows AUTOINCREMENT for integer primary keys
+
+    **Limitations:**
+    - SQLite doesn't have built-in schema support (single database only)
+    - Foreign keys are stored as table constraints, not shown in column info
+  </Tab>
+
+  <Tab title="PostgreSQL">
+    **Schema Detection:**
+    - Lists tables from the `public` schema by default
+    - Supports custom schemas (shown in tree view)
+    - Shows sequences and serial types
+
+    **Features:**
+    - Full support for complex data types (arrays, JSON, etc.)
+    - Shows constraint information
+    - Displays default expressions (e.g., `now()`, `gen_random_uuid()`)
+  </Tab>
+
+  <Tab title="MySQL">
+    **Schema Detection:**
+    - Lists all tables in the specified database
+    - Shows auto-increment status for primary keys
+    - Displays character sets for text columns
+
+    **Features:**
+    - Supports ENUM and SET types
+    - Shows index information
+    - Table comments are included if available
+  </Tab>
+
+  <Tab title="SQL Server">
+    **Schema Detection:**
+    - Lists tables from `dbo` schema by default
+    - Supports multi-schema databases
+    - Shows computed columns
+
+    **Features:**
+    - Full support for identity columns
+    - Shows uniqueidentifier and rowversion types
+    - Displays default constraint names
+  </Tab>
+</Tabs>
+
+## Error Messages
+
+| Error | Meaning | Solution |
+|-------|---------|----------|
+| `Connection 'name' not found` | No saved connection with that name | Use `connect list` to see available connections |
+| `No tables found in the database` | Database exists but has no tables | Create tables or verify you're connecting to the right database |
+| `No columns found in the table` | Table name doesn't exist | Check table name with `schema list` (case-sensitive) |
+| `Invalid data command` | Incorrect command syntax | Verify command format: `schema <subcommand> <args>` |
+
+## Performance Considerations
+
+<Note>
+  **Row Counts**: Computing row counts with `COUNT(*)` can be slow on very large tables (millions of rows). The schema commands use this to provide accurate counts.
+</Note>
+
+<Tip>
+  **Tree View**: For databases with 100+ tables, consider using `schema list` first to narrow down which tables you want to inspect with `schema info`.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Browse Table Data" icon="table" href="/commands/data">
+    After exploring the schema, browse actual data with `data browse`
+  </Card>
+  <Card title="Run Queries" icon="code" href="/commands/data#data-query">
+    Use schema knowledge to write queries with `data query`
+  </Card>
+</CardGroup>

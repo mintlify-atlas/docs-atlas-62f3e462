@@ -1,0 +1,190 @@
+---
+title: Database Providers Overview
+description: Overview of all supported database providers in Queryly
+icon: database
+---
+
+Queryly supports multiple database providers, allowing you to work with different database systems using a consistent interface. Each provider implements connection management, schema exploration, query execution, and data export capabilities.
+
+## Supported Database Types
+
+Queryly currently supports four major database systems:
+
+<CardGroup cols={2}>
+  <Card title="SQLite" icon="database" href="/providers/sqlite">
+    Lightweight, file-based database perfect for local development
+  </Card>
+  <Card title="PostgreSQL" icon="elephant" href="/providers/postgresql">
+    Powerful, open-source relational database system
+  </Card>
+  <Card title="MySQL" icon="dolphin" href="/providers/mysql">
+    Popular open-source relational database
+  </Card>
+  <Card title="SQL Server" icon="server" href="/providers/sqlserver">
+    Microsoft's enterprise-grade database system
+  </Card>
+</CardGroup>
+
+## Feature Comparison
+
+All providers support the core Queryly features:
+
+| Feature | SQLite | PostgreSQL | MySQL | SQL Server |
+|---------|--------|------------|-------|------------|
+| Connection Management | <Check /> | <Check /> | <Check /> | <Check /> |
+| Schema Exploration | <Check /> | <Check /> | <Check /> | <Check /> |
+| Table Browsing | <Check /> | <Check /> | <Check /> | <Check /> |
+| Query Execution | <Check /> | <Check /> | <Check /> | <Check /> |
+| Data Export (CSV/JSON) | <Check /> | <Check /> | <Check /> | <Check /> |
+| Schema Support | N/A | Public only | N/A | <Check /> |
+| File-based | <Check /> | | | |
+| Network Connection | | <Check /> | <Check /> | <Check /> |
+
+## Connection String Anatomy
+
+Each database provider uses a specific connection string format:
+
+### SQLite
+```
+Data Source=path/to/database.db
+```
+Simple file path pointing to your SQLite database file.
+
+### PostgreSQL
+```
+Host=localhost;Database=mydb;Username=user;Password=pass
+```
+Requires host, database name, and credentials.
+
+### MySQL
+```
+Server=localhost;Database=mydb;User=root;Password=pass
+```
+Similar to PostgreSQL but uses `Server` and `User` keywords.
+
+### SQL Server
+```
+Server=localhost;Database=mydb;User Id=sa;Password=pass;TrustServerCertificate=True
+```
+Includes `TrustServerCertificate` for SSL handling.
+
+## Choosing the Right Provider
+
+<AccordionGroup>
+  <Accordion title="When to use SQLite">
+    - **Local development** - Perfect for prototyping and testing
+    - **Single-user applications** - No concurrent write issues
+    - **Embedded databases** - No server setup required
+    - **Small to medium datasets** - Efficient for datasets under 1GB
+    - **File-based portability** - Easy to copy and share
+  </Accordion>
+
+  <Accordion title="When to use PostgreSQL">
+    - **Production applications** - Battle-tested and reliable
+    - **Complex queries** - Advanced SQL features and performance
+    - **JSON/JSONB support** - First-class JSON storage
+    - **Multi-user environments** - Excellent concurrency handling
+    - **Data integrity** - Strong ACID compliance
+  </Accordion>
+
+  <Accordion title="When to use MySQL">
+    - **Web applications** - Popular LAMP/LEMP stack choice
+    - **Read-heavy workloads** - Optimized for read operations
+    - **High availability** - Robust replication features
+    - **Large user bases** - Proven scalability
+    - **WordPress/PHP apps** - Industry standard pairing
+  </Accordion>
+
+  <Accordion title="When to use SQL Server">
+    - **Windows environments** - Native Windows integration
+    - **Enterprise applications** - Enterprise-grade features
+    - **.NET integration** - Seamless .NET ecosystem support
+    - **Advanced features** - Full-text search, spatial data
+    - **Microsoft stack** - Azure, Active Directory integration
+  </Accordion>
+</AccordionGroup>
+
+## Adding a Connection
+
+Regardless of the provider, adding a connection follows the same workflow:
+
+```bash
+queryly connect add
+```
+
+You'll be prompted for:
+1. **Connection name** - A friendly name (e.g., "LocalDB", "ProductionDB")
+2. **Database type** - Select from SQLite, PostgreSQL, MySQL, or SQL Server
+3. **Connection string** - Provider-specific connection string
+
+The connection is automatically tested before being saved.
+
+<Note>
+Connection strings are stored in `~/.queryly/connections.json`. Ensure this file has appropriate permissions to protect sensitive credentials.
+</Note>
+
+## Testing Connections
+
+After adding a connection, you can test it anytime:
+
+```bash
+queryly connect test MyConnection
+```
+
+This verifies:
+- Connection string is valid
+- Database is accessible
+- Credentials are correct
+- Network connectivity (for remote databases)
+
+## Common Connection Parameters
+
+### Timeout Settings
+Most providers support timeout parameters:
+- **SQLite**: `Default Timeout=30`
+- **PostgreSQL**: `Timeout=30;Command Timeout=30`
+- **MySQL**: `Connection Timeout=30;Default Command Timeout=30`
+- **SQL Server**: `Connection Timeout=30;Command Timeout=30`
+
+### SSL/TLS Configuration
+Secure connections for network databases:
+- **PostgreSQL**: `SSL Mode=Require` or `SSL Mode=Prefer`
+- **MySQL**: `SslMode=Required` or `SslMode=Preferred`
+- **SQL Server**: `Encrypt=True;TrustServerCertificate=False`
+
+### Connection Pooling
+All providers support connection pooling:
+- **SQLite**: Limited pooling support
+- **PostgreSQL**: `Pooling=true;Minimum Pool Size=0;Maximum Pool Size=100`
+- **MySQL**: `Pooling=true;MinimumPoolSize=0;MaximumPoolSize=100`
+- **SQL Server**: `Pooling=true;Min Pool Size=0;Max Pool Size=100`
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="SQLite Setup" icon="database" href="/providers/sqlite">
+    Learn how to configure SQLite connections
+  </Card>
+  <Card title="PostgreSQL Setup" icon="elephant" href="/providers/postgresql">
+    Connect to PostgreSQL databases
+  </Card>
+  <Card title="MySQL Setup" icon="dolphin" href="/providers/mysql">
+    Configure MySQL connections
+  </Card>
+  <Card title="SQL Server Setup" icon="server" href="/providers/sqlserver">
+    Set up SQL Server connections
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Warning>
+If connection tests fail, verify:
+- Connection string format matches the provider syntax
+- Database server is running (for network databases)
+- Firewall allows connections on the database port
+- Credentials are correct and have appropriate permissions
+- For file-based databases (SQLite), the file path is correct and accessible
+</Warning>
+
+For provider-specific troubleshooting, see the individual provider documentation pages.

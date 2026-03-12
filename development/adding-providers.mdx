@@ -1,0 +1,784 @@
+---
+title: Adding Database Providers
+description: Step-by-step guide for adding new database support to Queryly
+---
+
+Queryly uses a provider pattern to support multiple databases. This guide walks you through implementing support for a new database.
+
+## Overview
+
+Adding a new database provider involves:
+
+1. Implementing the `IConnectionProvider` interface
+2. Writing database-specific SQL queries
+3. Handling database-specific connection types
+4. Registering the provider
+5. Testing the implementation
+
+<Note>
+Before implementing a new provider, check if someone is already working on it in the [GitHub Issues](https://github.com/Ayine-nongre/queryly/issues).
+</Note>
+
+## The IConnectionProvider Interface
+
+All database providers must implement this interface:
+
+**Location:** `src/Queryly.Core/Connections/IConnectionProvider.cs`
+
+```csharp
+using System.Data.Common;
+
+public interface IConnectionProvider
+{
+    DatabaseType Type { get; }
+    Task<DbConnection> OpenConnectionAsync(string connectionString);
+    Task<bool> TestConnectionAsync(string connectionString);
+    List<string> GetDatabasesAsync(DbConnection connection);
+    Task<List<TableInfo>> GetTablesAsync(DbConnection connection, string database);
+    Task<List<ColumnInfo>> GetColumnsAsync(DbConnection connection, string database, string table);
+}
+```
+
+### Interface Members
+
+| Member | Description |
+|--------|-------------|
+| `Type` | Returns the `DatabaseType` enum value for this provider |
+| `OpenConnectionAsync` | Opens and returns a database connection |
+| `TestConnectionAsync` | Tests if a connection string is valid |
+| `GetDatabasesAsync` | Returns list of databases (or single database name) |
+| `GetTablesAsync` | Returns list of tables in the database |
+| `GetColumnsAsync` | Returns columns for a specific table |
+
+## Step-by-Step Implementation
+
+<Steps>
+
+### Create the provider directory
+
+Create a new folder for your provider:
+
+```bash
+mkdir src/Queryly.Providers/YourDatabase
+```
+
+For example:
+- `Queryly.Providers/MySql/`
+- `Queryly.Providers/Oracle/`
+- `Queryly.Providers/MariaDB/`
+
+### Add the database type enum
+
+Add your database to the `DatabaseType` enum:
+
+**File:** `src/Queryly.Core/Models/DatabaseType.cs`
+
+```csharp
+public enum DatabaseType
+{
+    SQLite,
+    SQLServer,
+    PostgreSQL,
+    MySQL,
+    Oracle  // Add your database here
+}
+
+public static class DatabaseTypeExtensions
+{
+    public static string TypeToString(this DatabaseType dbType)
+    {
+        return dbType switch
+        {
+            DatabaseType.SQLite => "SQLite",
+            DatabaseType.SQLServer => "SQLServer",
+            DatabaseType.MySQL => "MySQL",
+            DatabaseType.PostgreSQL => "PostgreSQL",
+            DatabaseType.Oracle => "Oracle",  // Add mapping
+            _ => "Unknown"
+        };
+    }
+}
+```
+
+### Install the database NuGet package
+
+Add the database client library to `Queryly.Providers`:
+
+```bash
+cd src/Queryly.Providers
+dotnet add package Oracle.ManagedDataAccess.Core
+```
+
+Common packages:
+- **MySQL:** `MySql.Data`
+- **PostgreSQL:** `Npgsql`
+- **SQL Server:** `Microsoft.Data.SqlClient`
+- **Oracle:** `Oracle.ManagedDataAccess.Core`
+- **MongoDB:** `MongoDB.Driver`
+
+### Implement the provider class
+
+Create your provider implementation:
+
+**File:** `src/Queryly.Providers/YourDatabase/YourDatabaseConnectionProvider.cs`
+
+Here's a template:
+
+```csharp
+using System.Data.Common;
+using YourDatabase.Client; // Your database client namespace
+
+namespace Queryly.Providers.YourDatabase;
+
+public class YourDatabaseConnectionProvider : IConnectionProvider
+{
+    // 1. Specify the database type
+    public DatabaseType Type => DatabaseType.YourDatabase;
+
+    // 2. Open a connection
+    public async Task<DbConnection> OpenConnectionAsync(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException(
+                "Connection string cannot be null or empty.", 
+                nameof(connectionString)
+            );
+
+        try
+        {
+            var connection = new YourDatabaseConnection(connectionString);
+            await connection.OpenAsync();
+            return connection;
+        }
+        catch (YourDatabaseException ex)
+        {
+            throw new Exception(
+                $"Failed to open connection: {ex.Message}", 
+                ex
+            );
+        }
+    }
+
+    // 3. Test connection
+    public async Task<bool> TestConnectionAsync(string connectionString)
+    {
+        try
+        {
+            using var connection = new YourDatabaseConnection(connectionString);
+            await connection.OpenAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // 4. Get databases
+    public List<string> GetDatabasesAsync(DbConnection connection)
+    {
+        if (connection is not YourDatabaseConnection)
+            throw new ArgumentException(
+                "Connection must be a YourDatabase connection.", 
+                nameof(connection)
+            );
+        
+        var sqlConn = (YourDatabaseConnection)connection;
+        var builder = new YourDatabaseConnectionStringBuilder(sqlConn.ConnectionString);
+        
+        return new List<string> { builder.Database ?? "default" };
+    }
+
+    // 5. Get tables
+    public async Task<List<TableInfo>> GetTablesAsync(
+        DbConnection connection, 
+        string database)
+    {
+        if (connection is not YourDatabaseConnection)
+            throw new ArgumentException(
+                "Connection must be a YourDatabase connection.", 
+                nameof(connection)
+            );
+
+        try
+        {
+            var tables = new List<TableInfo>();
+            var sqlConn = (YourDatabaseConnection)connection;
+            
+            var command = sqlConn.CreateCommand();
+            // Database-specific SQL to list tables
+            command.CommandText = "SELECT table_name FROM information_schema.tables";
+            
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var tableName = reader.GetString(0);
+                
+                // Optionally get row count
+                var countCommand = sqlConn.CreateCommand();
+                countCommand.CommandText = $"SELECT COUNT(*) FROM {tableName}";
+                var rowCount = Convert.ToInt64(await countCommand.ExecuteScalarAsync() ?? 0L);
+                
+                tables.Add(new TableInfo 
+                { 
+                    Name = tableName, 
+                    RowCount = rowCount 
+                });
+            }
+            
+            return tables;
+        }
+        catch (YourDatabaseException ex)
+        {
+            throw new Exception(
+                $"Failed to retrieve tables: {ex.Message}", 
+                ex
+            );
+        }
+    }
+
+    // 6. Get columns
+    public async Task<List<ColumnInfo>> GetColumnsAsync(
+        DbConnection connection, 
+        string database, 
+        string table)
+    {
+        if (connection is not YourDatabaseConnection) 
+            throw new ArgumentException(
+                "Connection must be a YourDatabase connection.", 
+                nameof(connection)
+            );
+        
+        if (string.IsNullOrWhiteSpace(table)) 
+            throw new ArgumentNullException(
+                nameof(table), 
+                "Table name cannot be null."
+            );
+        
+        try
+        {
+            var columns = new List<ColumnInfo>();
+            var sqlConn = (YourDatabaseConnection)connection;
+            
+            var command = sqlConn.CreateCommand();
+            // Database-specific SQL to get column info
+            command.CommandText = @"
+                SELECT 
+                    column_name,
+                    data_type,
+                    is_nullable,
+                    column_default
+                FROM information_schema.columns
+                WHERE table_name = @tableName
+                ORDER BY ordinal_position";
+            
+            command.Parameters.AddWithValue("@tableName", table);
+            
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var columnName = reader.GetString(0);
+                var dataType = reader.GetString(1);
+                var isNullable = reader.GetString(2) == "YES";
+                var defaultValue = reader.IsDBNull(3) ? null : reader.GetString(3);
+                
+                columns.Add(new ColumnInfo 
+                { 
+                    Name = columnName, 
+                    DataType = dataType,
+                    IsNullable = isNullable,
+                    DefaultValue = defaultValue
+                });
+            }
+            
+            return columns;
+        }
+        catch (YourDatabaseException ex)
+        {
+            throw new Exception(
+                $"Failed to retrieve columns for table '{table}': {ex.Message}", 
+                ex
+            );
+        }
+    }
+}
+```
+
+### Register the provider
+
+Add your provider to the factory method that instantiates providers based on `DatabaseType`.
+
+**Location:** Find where providers are instantiated (typically in command classes)
+
+```csharp
+IConnectionProvider provider = dbType switch
+{
+    DatabaseType.SQLite => new SqliteConnectionProvider(),
+    DatabaseType.PostgreSQL => new PostgreSQLConnectionProvider(),
+    DatabaseType.MySQL => new MySQLConnectionProvider(),
+    DatabaseType.SQLServer => new SqlServerConnectionProvider(),
+    DatabaseType.YourDatabase => new YourDatabaseConnectionProvider(),  // Add this
+    _ => throw new NotSupportedException($"Database type {dbType} not supported")
+};
+```
+
+### Write tests
+
+Create tests for your provider:
+
+**File:** `tests/Queryly.Tests/Providers/YourDatabaseConnectionProviderTests.cs`
+
+```csharp
+using Xunit;
+using FluentAssertions;
+using Queryly.Providers.YourDatabase;
+
+namespace Queryly.Tests.Providers;
+
+public class YourDatabaseConnectionProviderTests
+{
+    [Fact]
+    public async Task OpenConnectionAsync_WithValidConnectionString_ReturnsOpenConnection()
+    {
+        // Arrange
+        var provider = new YourDatabaseConnectionProvider();
+        var connectionString = "your-test-connection-string";
+        
+        // Act
+        var connection = await provider.OpenConnectionAsync(connectionString);
+        
+        // Assert
+        connection.Should().NotBeNull();
+        connection.State.Should().Be(ConnectionState.Open);
+        
+        // Cleanup
+        await connection.DisposeAsync();
+    }
+    
+    [Fact]
+    public async Task GetTablesAsync_WithEmptyDatabase_ReturnsEmptyList()
+    {
+        // Arrange
+        var provider = new YourDatabaseConnectionProvider();
+        var connectionString = "your-test-connection-string";
+        using var connection = await provider.OpenConnectionAsync(connectionString);
+        
+        // Act
+        var tables = await provider.GetTablesAsync(connection, "testdb");
+        
+        // Assert
+        tables.Should().BeEmpty();
+    }
+    
+    // Add more tests...
+}
+```
+
+### Update documentation
+
+Add your database to the documentation:
+
+- Update `README.md` with connection string format
+- Add examples to quick start guide
+- Document any database-specific features or limitations
+
+</Steps>
+
+## Reference Implementation: SQLite
+
+Here's the complete SQLite provider as a reference:
+
+**File:** `src/Queryly.Providers/Sqlite/SqliteConnectionProvider.cs`
+
+```csharp
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
+
+public class SqliteConnectionProvider: IConnectionProvider
+{
+    public DatabaseType Type => DatabaseType.SQLite;
+
+    public async Task<DbConnection> OpenConnectionAsync(string connectionString)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new ArgumentException(
+                    "Connection string cannot be null or empty.", 
+                    nameof(connectionString)
+                );
+            }
+
+            var connection = new SqliteConnection(connectionString);
+            await connection.OpenAsync();
+            return connection;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to open SQLite connection.", ex);
+        }
+    }
+
+    public async Task<bool> TestConnectionAsync(string connectionString)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(connectionString);
+            await connection.OpenAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public List<string> GetDatabasesAsync(DbConnection connection)
+    {
+        try
+        {
+            if (connection is not SqliteConnection)
+            {
+                throw new ArgumentException(
+                    "Connection must be a SQLite connection.", 
+                    nameof(connection)
+                );
+            }
+            var sqlConn = (SqliteConnection)connection;
+            var builder = new SqliteConnectionStringBuilder(sqlConn.ConnectionString);
+            var fileName = Path.GetFileNameWithoutExtension(builder.DataSource);
+            return new List<string> { fileName };
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to retrieve databases for SQLite.", ex);
+        }
+    }
+
+    public async Task<List<TableInfo>> GetTablesAsync(
+        DbConnection connection, 
+        string database)
+    {
+        try
+        {
+            if (connection is not SqliteConnection)
+            {
+                throw new ArgumentException(
+                    "Connection must be a SQLite connection.", 
+                    nameof(connection)
+                );
+            }
+
+            if (database == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(database), 
+                    "Database name cannot be null."
+                );
+            }
+
+            var tables = new List<TableInfo>();
+            var sqlConn = (SqliteConnection)connection;
+            var command = sqlConn.CreateCommand();
+            
+            // SQLite-specific query
+            command.CommandText = 
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
+            
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var tableName = reader.GetString(0);
+
+                var countCommand = sqlConn.CreateCommand();
+                countCommand.CommandText = $"SELECT COUNT(*) FROM [{tableName}];";
+                var rowCount = (long)(await countCommand.ExecuteScalarAsync() ?? 0L);
+
+                tables.Add(new TableInfo { Name = tableName, RowCount = rowCount });
+            }
+            return tables;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to retrieve tables for SQLite.", ex);
+        }
+    }
+
+    public async Task<List<ColumnInfo>> GetColumnsAsync(
+        DbConnection connection, 
+        string database, 
+        string table)
+    {
+        try
+        {
+            if (connection is not SqliteConnection) 
+                throw new ArgumentException(
+                    "Connection must be a SQLite connection.", 
+                    nameof(connection)
+                );
+            
+            if (database == null)
+                throw new ArgumentNullException(
+                    nameof(database), 
+                    "Database name cannot be null."
+                );
+            
+            if (table == null) 
+                throw new ArgumentNullException(
+                    nameof(table), 
+                    "Table name cannot be null."
+                );
+            
+            var columns = new List<ColumnInfo>();
+            var sqlConn = (SqliteConnection)connection;
+            var command = sqlConn.CreateCommand();
+            
+            // SQLite-specific PRAGMA command
+            command.CommandText = $"PRAGMA table_info([{table}]);";
+            
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var columnName = reader.GetString(1);
+                var dataType = reader.GetString(2);
+                var notNull = reader.GetInt32(3);
+                var defaultValue = reader.IsDBNull(4) 
+                    ? null 
+                    : reader.GetValue(4)?.ToString();
+                var pk = reader.GetInt32(5);
+                
+                columns.Add(new ColumnInfo 
+                { 
+                    Name = columnName, 
+                    DataType = dataType,
+                    IsNullable = notNull == 0,
+                    DefaultValue = defaultValue,
+                    IsPrimaryKey = pk != 0
+                });
+            }
+            return columns;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to retrieve columns for SQLite.", ex);
+        }
+    }
+}
+```
+
+## Database-Specific SQL Queries
+
+Each database has different SQL syntax for metadata queries:
+
+<Tabs>
+  <Tab title="SQLite">
+    ```sql
+    -- List tables
+    SELECT name FROM sqlite_master 
+    WHERE type='table' AND name NOT LIKE 'sqlite_%';
+    
+    -- Get columns
+    PRAGMA table_info(table_name);
+    ```
+  </Tab>
+  
+  <Tab title="PostgreSQL">
+    ```sql
+    -- List tables
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_type = 'BASE TABLE';
+    
+    -- Get columns
+    SELECT column_name, data_type, is_nullable, column_default
+    FROM information_schema.columns
+    WHERE table_name = @tableName
+    ORDER BY ordinal_position;
+    ```
+  </Tab>
+  
+  <Tab title="MySQL">
+    ```sql
+    -- List tables
+    SHOW TABLES;
+    
+    -- Get columns
+    SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = @tableName
+    ORDER BY ORDINAL_POSITION;
+    ```
+  </Tab>
+  
+  <Tab title="SQL Server">
+    ```sql
+    -- List tables
+    SELECT TABLE_NAME 
+    FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_TYPE = 'BASE TABLE';
+    
+    -- Get columns
+    SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = @tableName
+    ORDER BY ORDINAL_POSITION;
+    ```
+  </Tab>
+</Tabs>
+
+## Data Models Reference
+
+### TableInfo
+
+```csharp
+public class TableInfo
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Schema { get; set; }
+    public long RowCount { get; set; } = 0;
+    public long SizeInBytes { get; set; } = 0;
+    public DateTime? LastModified { get; set; }
+}
+```
+
+### ColumnInfo
+
+```csharp
+public class ColumnInfo
+{
+    public string Name { get; set; } = string.Empty;
+    public string DataType { get; set; } = string.Empty;
+    public bool IsNullable { get; set; } = true;
+    public bool IsPrimaryKey { get; set; }
+    public bool IsForeignKey { get; set; }
+    public string? DefaultValue { get; set; }
+    public int? MaxLength { get; set; }
+}
+```
+
+## Testing Your Provider
+
+Test your provider thoroughly:
+
+### Manual Testing
+
+```bash
+# Build the project
+dotnet build
+
+# Run Queryly
+dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+
+# Test connection
+queryly connect add
+# Select your new database type
+# Enter connection string
+# Verify connection test passes
+
+# Test schema operations
+queryly schema list YourConnection
+queryly schema info YourConnection table_name
+
+# Test data operations
+queryly data browse YourConnection table_name
+```
+
+### Automated Testing
+
+```bash
+# Run all tests
+dotnet test
+
+# Run your provider tests
+dotnet test --filter "FullyQualifiedName~YourDatabaseConnectionProviderTests"
+```
+
+## Common Challenges
+
+### Challenge 1: Connection String Parsing
+
+Different databases have different connection string formats:
+
+```csharp
+// Use the database's ConnectionStringBuilder
+var builder = new YourDatabaseConnectionStringBuilder(connectionString);
+var database = builder.Database ?? "default";
+```
+
+### Challenge 2: Metadata Queries
+
+Some databases don't support INFORMATION_SCHEMA:
+
+```csharp
+// Fallback to database-specific queries
+if (supportsInformationSchema)
+{
+    // Use standard SQL
+}
+else
+{
+    // Use database-specific commands
+}
+```
+
+### Challenge 3: Data Type Mapping
+
+Map database-specific types to common types:
+
+```csharp
+private string NormalizeDataType(string dbType)
+{
+    return dbType.ToLower() switch
+    {
+        "varchar" or "nvarchar" or "text" => "TEXT",
+        "int" or "integer" or "bigint" => "INTEGER",
+        "decimal" or "numeric" or "money" => "DECIMAL",
+        "datetime" or "timestamp" => "DATETIME",
+        _ => dbType
+    };
+}
+```
+
+## Submitting Your Provider
+
+Once your provider is complete:
+
+<Steps>
+
+### Test thoroughly
+
+Ensure all functionality works correctly.
+
+### Update documentation
+
+Add examples and connection string formats to README.
+
+### Create a pull request
+
+Follow the [Contributing Guide](/development/contributing) to submit your PR.
+
+### Include in PR description:
+
+- Database name and version tested
+- Connection string examples
+- Any limitations or known issues
+- Test results
+
+</Steps>
+
+## Need Help?
+
+If you're stuck while implementing a provider:
+
+- Check existing provider implementations for reference
+- Ask in [GitHub Discussions](https://github.com/Ayine-nongre/queryly/discussions)
+- Open a draft PR for early feedback
+- Contact the maintainer: [@Ayine-nongre](https://github.com/Ayine-nongre)
+
+## Related Documentation
+
+- [Architecture Overview](/development/architecture)
+- [Contributing Guide](/development/contributing)
+- [Configuration Reference](/guides/configuration)

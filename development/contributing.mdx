@@ -1,0 +1,569 @@
+---
+title: Contributing to Queryly
+description: Learn how to contribute to Queryly development
+---
+
+Thank you for your interest in contributing to Queryly! This guide will help you get started with development and submit your first contribution.
+
+## Ways to Contribute
+
+There are many ways to contribute to Queryly:
+
+<CardGroup cols={2}>
+  <Card title="Report Bugs" icon="bug">
+    Open an issue with details and reproduction steps
+  </Card>
+  <Card title="Suggest Features" icon="lightbulb">
+    Share your ideas for new functionality
+  </Card>
+  <Card title="Submit Pull Requests" icon="code-pull-request">
+    Fix bugs or add features
+  </Card>
+  <Card title="Improve Documentation" icon="book">
+    Help make the docs clearer
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **.NET 8.0 SDK or later** - [Download](https://dotnet.microsoft.com/download)
+- **Git** - [Download](https://git-scm.com/downloads)
+- **A code editor** - Visual Studio, VS Code, or Rider recommended
+
+### Development Setup
+
+<Steps>
+
+### Fork the repository
+
+Visit [github.com/Ayine-nongre/queryly](https://github.com/Ayine-nongre/queryly) and click the "Fork" button.
+
+### Clone your fork
+
+```bash
+git clone https://github.com/YOUR-USERNAME/queryly.git
+cd queryly
+```
+
+### Add upstream remote
+
+```bash
+git remote add upstream https://github.com/Ayine-nongre/queryly.git
+```
+
+### Restore dependencies
+
+```bash
+dotnet restore
+```
+
+### Build the project
+
+```bash
+dotnet build
+```
+
+You should see a successful build output.
+
+### Run tests
+
+```bash
+dotnet test
+```
+
+Ensure all tests pass before making changes.
+
+### Run Queryly
+
+```bash
+dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+```
+
+You should see the Queryly CLI output.
+
+</Steps>
+
+## Development Workflow
+
+### 1. Create a Feature Branch
+
+Always create a new branch for your work:
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+Branch naming conventions:
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation changes
+- `refactor/` - Code refactoring
+
+### 2. Make Your Changes
+
+Edit the code, following our [coding standards](#coding-standards).
+
+### 3. Test Your Changes
+
+Run tests frequently during development:
+
+```bash
+# Run all tests
+dotnet test
+
+# Run specific test file
+dotnet test --filter "FullyQualifiedName~SqliteConnectionProviderTests"
+
+# Run with verbose output
+dotnet test -v detailed
+```
+
+### 4. Commit Your Changes
+
+Write clear, concise commit messages:
+
+```bash
+git add .
+git commit -m "Add support for MySQL connection pooling"
+```
+
+**Good commit messages:**
+- `Add support for table indexes in schema view`
+- `Fix connection leak in PostgreSQL provider`
+- `Update documentation for connection strings`
+
+**Avoid:**
+- `Fixed stuff`
+- `WIP`
+- `Update`
+
+### 5. Keep Your Branch Updated
+
+Regularly sync with the upstream repository:
+
+```bash
+git fetch upstream
+git rebase upstream/main
+```
+
+### 6. Push Your Branch
+
+```bash
+git push origin feature/your-feature-name
+```
+
+### 7. Create a Pull Request
+
+Go to your fork on GitHub and click "New Pull Request".
+
+**Pull Request Guidelines:**
+- Provide a clear title and description
+- Reference any related issues (e.g., "Fixes #123")
+- Include screenshots for UI changes
+- Ensure all tests pass
+- Wait for code review feedback
+
+## Coding Standards
+
+### C# Style Guide
+
+We follow standard C# conventions:
+
+#### Naming Conventions
+
+```csharp
+// Classes and interfaces - PascalCase
+public class ConnectionManager { }
+public interface IConnectionProvider { }
+
+// Methods - PascalCase
+public async Task OpenConnectionAsync() { }
+
+// Properties - PascalCase
+public string ConnectionString { get; set; }
+
+// Private fields - camelCase with underscore
+private string _connectionString;
+
+// Local variables - camelCase
+var tableName = "users";
+
+// Constants - PascalCase
+public const int MaxRetries = 3;
+```
+
+#### File Organization
+
+```csharp
+// 1. Using statements
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
+
+// 2. Namespace
+namespace Queryly.Providers.Sqlite;
+
+// 3. Class definition
+public class SqliteConnectionProvider : IConnectionProvider
+{
+    // 4. Fields
+    private readonly string _connectionString;
+    
+    // 5. Properties
+    public DatabaseType Type => DatabaseType.SQLite;
+    
+    // 6. Constructors
+    public SqliteConnectionProvider(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+    
+    // 7. Public methods
+    public async Task<DbConnection> OpenConnectionAsync()
+    {
+        // Implementation
+    }
+    
+    // 8. Private methods
+    private void ValidateConnectionString()
+    {
+        // Implementation
+    }
+}
+```
+
+#### Async/Await
+
+Always use async/await for I/O operations:
+
+```csharp
+// Good
+public async Task<List<TableInfo>> GetTablesAsync(DbConnection connection)
+{
+    var tables = new List<TableInfo>();
+    using var reader = await command.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+    {
+        // Process data
+    }
+    return tables;
+}
+
+// Avoid
+public List<TableInfo> GetTables(DbConnection connection)
+{
+    // Synchronous database access
+}
+```
+
+#### Error Handling
+
+Provide meaningful error messages:
+
+```csharp
+// Good
+try
+{
+    await connection.OpenAsync();
+}
+catch (SqliteException ex)
+{
+    throw new ConnectionException(
+        $"Failed to open SQLite database at '{filePath}': {ex.Message}", 
+        ex
+    );
+}
+
+// Avoid
+catch (Exception ex)
+{
+    throw new Exception("Error", ex);
+}
+```
+
+#### Resource Management
+
+Always dispose of resources:
+
+```csharp
+// Good
+using var connection = new SqliteConnection(connectionString);
+await connection.OpenAsync();
+
+// Also good
+using (var connection = new SqliteConnection(connectionString))
+{
+    await connection.OpenAsync();
+    // Use connection
+}
+```
+
+### Code Documentation
+
+Document public APIs with XML comments:
+
+```csharp
+/// <summary>
+/// Opens a connection to the database using the provided connection string.
+/// </summary>
+/// <param name="connectionString">The database connection string.</param>
+/// <returns>An open database connection.</returns>
+/// <exception cref="ArgumentException">Thrown when connection string is null or empty.</exception>
+/// <exception cref="ConnectionException">Thrown when connection fails.</exception>
+public async Task<DbConnection> OpenConnectionAsync(string connectionString)
+{
+    // Implementation
+}
+```
+
+## Testing Guidelines
+
+### Writing Tests
+
+We use xUnit for testing. Place tests in `tests/Queryly.Tests/`.
+
+#### Test Structure
+
+```csharp
+using Xunit;
+using FluentAssertions;
+
+namespace Queryly.Tests.Providers;
+
+public class SqliteConnectionProviderTests
+{
+    [Fact]
+    public async Task OpenConnectionAsync_WithValidConnectionString_ReturnsOpenConnection()
+    {
+        // Arrange
+        var provider = new SqliteConnectionProvider();
+        var connectionString = "Data Source=:memory:";
+        
+        // Act
+        var connection = await provider.OpenConnectionAsync(connectionString);
+        
+        // Assert
+        connection.Should().NotBeNull();
+        connection.State.Should().Be(ConnectionState.Open);
+        
+        // Cleanup
+        await connection.DisposeAsync();
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task OpenConnectionAsync_WithInvalidConnectionString_ThrowsException(
+        string connectionString)
+    {
+        // Arrange
+        var provider = new SqliteConnectionProvider();
+        
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => provider.OpenConnectionAsync(connectionString)
+        );
+    }
+}
+```
+
+#### Test Naming Convention
+
+Use the pattern: `MethodName_Scenario_ExpectedResult`
+
+Examples:
+- `GetTablesAsync_WithEmptyDatabase_ReturnsEmptyList`
+- `TestConnectionAsync_WithInvalidHost_ReturnsFalse`
+- `GetColumnsAsync_WithValidTable_ReturnsColumnList`
+
+### Running Specific Tests
+
+```bash
+# Run all tests in a class
+dotnet test --filter "FullyQualifiedName~SqliteConnectionProviderTests"
+
+# Run a specific test
+dotnet test --filter "FullyQualifiedName~OpenConnectionAsync_WithValidConnectionString"
+
+# Run tests with coverage
+dotnet test /p:CollectCoverage=true
+```
+
+## Project Structure
+
+Understand the codebase organization:
+
+```
+queryly/
+├── src/
+│   ├── Queryly.CLI/              # CLI interface
+│   │   ├── Commands/             # Command implementations
+│   │   │   ├── ConnectCommands/  # Connection commands
+│   │   │   ├── SchemaCommands/   # Schema commands
+│   │   │   └── DataCommands/     # Data commands
+│   │   ├── Configuration/        # Config helpers
+│   │   └── Program.cs            # Entry point
+│   ├── Queryly.Core/             # Business logic
+│   │   ├── Models/               # Data models
+│   │   ├── Connections/          # Connection interfaces
+│   │   ├── Query/                # Query execution
+│   │   └── Exceptions/           # Custom exceptions
+│   └── Queryly.Providers/        # Database providers
+│       ├── Sqlite/               # SQLite
+│       ├── SqlServer/            # SQL Server
+│       ├── PostgreSql/           # PostgreSQL
+│       └── MySql/                # MySQL
+├── tests/
+│   └── Queryly.Tests/            # Unit tests
+├── docs/                         # Documentation
+└── README.md                     # Main readme
+```
+
+## Finding Issues to Work On
+
+### Good First Issues
+
+Look for issues labeled `good-first-issue` on GitHub:
+
+[View Good First Issues](https://github.com/Ayine-nongre/queryly/issues?q=is%3Aissue+is%3Aopen+label%3Agood-first-issue)
+
+### Help Wanted
+
+Issues labeled `help-wanted` are ready for contributions:
+
+[View Help Wanted Issues](https://github.com/Ayine-nongre/queryly/issues?q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted)
+
+### Suggesting New Features
+
+Before suggesting a feature:
+1. Check existing issues to avoid duplicates
+2. Clearly describe the use case
+3. Explain why it benefits Queryly users
+
+## Pull Request Process
+
+<Steps>
+
+### Submit your PR
+
+Create a pull request from your fork to the main repository.
+
+### Automated checks
+
+GitHub Actions will run:
+- Build verification
+- Unit tests
+- Code style checks
+
+### Code review
+
+A maintainer will review your code and may request changes.
+
+### Address feedback
+
+Make requested changes and push to your branch:
+
+```bash
+git add .
+git commit -m "Address review feedback"
+git push origin feature/your-feature-name
+```
+
+### Approval and merge
+
+Once approved, a maintainer will merge your PR.
+
+</Steps>
+
+## Build Commands Reference
+
+### Essential Commands
+
+```bash
+# Restore dependencies
+dotnet restore
+
+# Build entire solution
+dotnet build
+
+# Build specific project
+dotnet build src/Queryly.CLI/Queryly.CLI.csproj
+
+# Run all tests
+dotnet test
+
+# Run with detailed output
+dotnet test -v detailed
+
+# Run CLI
+dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+
+# Clean build artifacts
+dotnet clean
+```
+
+### Publishing
+
+```bash
+# Publish for current platform
+dotnet publish -c Release
+
+# Publish for specific platform
+dotnet publish -c Release -r win-x64
+dotnet publish -c Release -r linux-x64
+dotnet publish -c Release -r osx-x64
+```
+
+## Getting Help
+
+If you need help or have questions:
+
+### GitHub Discussions
+
+Ask questions in [GitHub Discussions](https://github.com/Ayine-nongre/queryly/discussions)
+
+### GitHub Issues
+
+Report bugs or request features at [GitHub Issues](https://github.com/Ayine-nongre/queryly/issues)
+
+### Contact the Maintainer
+
+- **GitHub:** [@Ayine-nongre](https://github.com/Ayine-nongre)
+- **LinkedIn:** [Eugene Atinbire](https://linkedin.com/in/ayine-nongre)
+
+## Code of Conduct
+
+### Be Respectful
+
+Treat all contributors with respect and kindness.
+
+### Be Collaborative
+
+Work together to improve Queryly.
+
+### Be Constructive
+
+Provide helpful feedback in code reviews.
+
+## License
+
+By contributing to Queryly, you agree that your contributions will be licensed under the MIT License.
+
+## Recognition
+
+All contributors are recognized in:
+- GitHub contributor list
+- Release notes
+- Project documentation
+
+Thank you for contributing to Queryly!
+
+## Related Documentation
+
+- [Architecture Overview](/development/architecture)
+- [Adding Database Providers](/development/adding-providers)
+- [Configuration Reference](/guides/configuration)

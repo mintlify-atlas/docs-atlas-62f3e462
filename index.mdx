@@ -1,97 +1,136 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Queryly"
+description: "Your lightweight, cross-platform database companion"
 ---
 
-## Setting up
+<div className="bg-white border-[#e6e6e6] rounded-lg p-8 mb-8">
+  <h1 className="text-5xl font-bold text-[#040404] mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+    Queryly
+  </h1>
+  <p className="text-xl text-[#4A4A4A] mb-6" style={{ fontFamily: 'Inter, sans-serif' }}>
+    A fast, developer-friendly CLI tool for managing local databases. Built in pure C# for .NET 8+, 
+    Queryly provides an intuitive terminal interface for common database operations without the overhead 
+    of heavyweight GUI tools.
+  </p>
+  <div className="flex gap-4">
+    <a 
+      href="/quickstart" 
+      className="inline-block px-6 py-3 bg-[#0288d1] text-white rounded-md font-semibold hover:opacity-90 transition"
+      style={{ fontFamily: 'Inter, sans-serif', borderRadius: '6px' }}
+    >
+      Get Started
+    </a>
+    <a 
+      href="https://github.com/Ayine-nongre/queryly" 
+      className="inline-block px-6 py-3 bg-transparent text-[#0288d1] border-2 border-[#0288d1] rounded-md font-semibold hover:bg-[#0288d1] hover:text-white transition"
+      style={{ fontFamily: 'Inter, sans-serif', borderRadius: '6px' }}
+    >
+      View on GitHub
+    </a>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Multi-Database Support" icon="database" href="/providers/overview">
+    Work with SQLite, PostgreSQL, MySQL, and SQL Server from a single tool
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Save, test, and organize database connections with ease
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Browse tables, view column structures, and explore indexes
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Data Operations" icon="table" href="/commands/data">
+    View, query, and export table data with a beautiful terminal UI
   </Card>
-</Columns>
+  <Card title="Interactive Queries" icon="terminal" href="/guides/examples">
+    Run custom SQL queries with an interactive query mode
+  </Card>
+  <Card title="Data Export" icon="file-export" href="/commands/data">
+    Export tables to CSV or JSON formats
+  </Card>
+  <Card title="Cross-Platform" icon="laptop" href="/installation">
+    Works on Windows, macOS, and Linux
+  </Card>
+  <Card title="Lightweight" icon="feather" href="/development/architecture">
+    Fast startup with minimal dependencies
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Quick Example
 
-Everything you need to create world-class documentation.
+Get started with Queryly in seconds:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<CodeGroup>
 
-## Need inspiration?
+```bash Installation
+# Clone and build
+git clone https://github.com/Ayine-nongre/queryly.git
+cd queryly
+dotnet build
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+# Run Queryly
+dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+```
+
+```bash Usage
+# Add a database connection
+queryly connect add
+
+# List all tables
+queryly schema list MyDB
+
+# Browse table data
+queryly data browse MyDB users
+
+# Run interactive queries
+queryly data query MyDB
+```
+
+</CodeGroup>
+
+## Supported Databases
+
+<CardGroup cols={4}>
+  <Card title="SQLite" icon="database" href="/providers/sqlite">
+    Fully supported
+  </Card>
+  <Card title="PostgreSQL" icon="elephant" href="/providers/postgresql">
+    Fully supported
+  </Card>
+  <Card title="MySQL" icon="server" href="/providers/mysql">
+    Fully supported
+  </Card>
+  <Card title="SQL Server" icon="microsoft" href="/providers/sqlserver">
+    Fully supported
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<CardGroup cols={3}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Queryly on your system
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in minutes
+  </Card>
+  <Card title="Commands" icon="terminal" href="/commands/overview">
+    Explore all available commands
+  </Card>
+</CardGroup>
+
+## Why Queryly?
+
+Queryly was born out of frustration with installing heavyweight database management tools on Linux. 
+It provides a fast, lightweight alternative that runs anywhere .NET does, with a beautiful terminal 
+interface powered by Spectre.Console.
+
+Whether you're a developer who needs quick database access, a data engineer managing multiple connections, 
+or someone who prefers the terminal over GUI tools, Queryly is built for you.
+
+<Note>
+  Queryly is open source and licensed under MIT. Contributions are welcome!
+</Note>

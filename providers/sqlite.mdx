@@ -1,0 +1,413 @@
+---
+title: SQLite Provider
+description: Complete guide to using SQLite with Queryly
+icon: database
+---
+
+SQLite is a lightweight, file-based database that's perfect for local development, testing, and embedded applications. No server setup required—just point to a database file and start querying.
+
+## Connection String Format
+
+The basic SQLite connection string format:
+
+```
+Data Source=path/to/database.db
+```
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Local File">
+    ### Relative Path
+    ```bash
+    # Current directory
+    Data Source=./mydb.db
+    Data Source=myapp.db
+
+    # Subdirectory
+    Data Source=./data/mydb.db
+    Data Source=data/mydb.db
+    ```
+
+    ### Absolute Path
+    ```bash
+    # Linux/macOS
+    Data Source=/home/user/databases/app.db
+    Data Source=/var/lib/myapp/data.db
+
+    # Windows
+    Data Source=C:\Users\username\databases\app.db
+    Data Source=C:\data\myapp.db
+    ```
+
+    <Note>
+    On Windows, use double backslashes (`\\`) or forward slashes (`/`) in paths.
+    </Note>
+  </Tab>
+
+  <Tab title="In-Memory">
+    ### In-Memory Database
+    ```bash
+    # Shared in-memory database
+    Data Source=:memory:
+
+    # Named in-memory database (shareable within app)
+    Data Source=file:memdb1?mode=memory&cache=shared
+    ```
+
+    <Warning>
+    In-memory databases are temporary and lost when the connection closes. Use for testing or temporary data only.
+    </Warning>
+  </Tab>
+
+  <Tab title="Read-Only">
+    ### Read-Only Access
+    ```bash
+    # Open database in read-only mode
+    Data Source=mydb.db;Mode=ReadOnly
+
+    # Absolute path, read-only
+    Data Source=/path/to/mydb.db;Mode=ReadOnly
+    ```
+
+    <Tip>
+    Use read-only mode to prevent accidental modifications when browsing production databases.
+    </Tip>
+  </Tab>
+
+  <Tab title="Advanced">
+    ### Advanced Options
+    ```bash
+    # Custom timeout
+    Data Source=mydb.db;Default Timeout=30
+
+    # Shared cache
+    Data Source=mydb.db;Cache=Shared
+
+    # Custom page size and cache size
+    Data Source=mydb.db;Page Size=4096;Cache Size=10000
+
+    # Foreign keys enabled
+    Data Source=mydb.db;Foreign Keys=True
+    ```
+
+    <Info>
+    Foreign key constraints are disabled by default in SQLite. Enable them with `Foreign Keys=True` if your schema relies on them.
+    </Info>
+  </Tab>
+</Tabs>
+
+## Adding a SQLite Connection
+
+### Interactive Mode
+```bash
+queryly connect add
+```
+
+You'll be prompted:
+1. **Name**: Enter a friendly name (e.g., "LocalDB", "TestDB")
+2. **Type**: Select "SQLite"
+3. **Connection String**: Enter your connection string
+
+Example session:
+```bash
+$ queryly connect add
+Enter connection name: MyApp
+Select database type: SQLite
+Enter connection string: Data Source=./myapp.db
+✓ Connection test successful!
+✓ Connection 'MyApp' saved
+```
+
+## Supported Features
+
+<Check>**Connection Management** - Add, test, list, and remove connections</Check>
+<Check>**Schema Exploration** - List tables and view table structures</Check>
+<Check>**Table Browsing** - View table data with pagination</Check>
+<Check>**Query Execution** - Run custom SQL queries interactively</Check>
+<Check>**Data Export** - Export tables to CSV or JSON formats</Check>
+
+## File Path Handling
+
+### Cross-Platform Paths
+
+<Tabs>
+  <Tab title="Linux/macOS">
+    ```bash
+    # Home directory
+    Data Source=~/databases/myapp.db
+    Data Source=/home/user/databases/myapp.db
+
+    # Relative to current directory
+    Data Source=./data/myapp.db
+    Data Source=../shared/myapp.db
+
+    # Temporary directory
+    Data Source=/tmp/test.db
+    ```
+  </Tab>
+
+  <Tab title="Windows">
+    ```bash
+    # User directory
+    Data Source=C:\Users\username\databases\myapp.db
+
+    # Forward slashes also work
+    Data Source=C:/Users/username/databases/myapp.db
+
+    # Relative paths
+    Data Source=.\data\myapp.db
+    Data Source=data\myapp.db
+
+    # Network share
+    Data Source=\\\\server\share\databases\myapp.db
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+Ensure the directory exists before specifying the path. SQLite will create the database file if it doesn't exist, but will not create parent directories.
+</Warning>
+
+## SQLite-Specific Tips
+
+### Performance Optimization
+
+<AccordionGroup>
+  <Accordion title="Enable WAL Mode">
+    WAL (Write-Ahead Logging) mode improves concurrency and performance:
+
+    ```sql
+    PRAGMA journal_mode=WAL;
+    ```
+
+    Run this query once after creating your database using:
+    ```bash
+    queryly data query MyConnection
+    SQL> PRAGMA journal_mode=WAL;
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize VACUUM">
+    Reclaim unused space and optimize the database:
+
+    ```sql
+    VACUUM;
+    ```
+
+    Run periodically to maintain optimal performance:
+    ```bash
+    queryly data query MyConnection
+    SQL> VACUUM;
+    ```
+  </Accordion>
+
+  <Accordion title="Analyze Statistics">
+    Update query optimizer statistics:
+
+    ```sql
+    ANALYZE;
+    ```
+
+    Run after significant data changes:
+    ```bash
+    queryly data query MyConnection
+    SQL> ANALYZE;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Common Workflows
+
+<Tabs>
+  <Tab title="Create & Populate">
+    ```bash
+    # Create a new SQLite database with sqlite3
+    sqlite3 myapp.db
+
+    # In sqlite3 prompt:
+    sqlite> CREATE TABLE users (
+       ...>   id INTEGER PRIMARY KEY,
+       ...>   name TEXT NOT NULL,
+       ...>   email TEXT UNIQUE
+       ...> );
+    sqlite> INSERT INTO users VALUES (1, 'Alice', 'alice@example.com');
+    sqlite> .quit
+
+    # Add to Queryly
+    queryly connect add
+    # name: MyApp
+    # type: SQLite
+    # connection string: Data Source=myapp.db
+
+    # Browse the data
+    queryly data browse MyApp users
+    ```
+  </Tab>
+
+  <Tab title="Explore Existing">
+    ```bash
+    # Test connection
+    queryly connect test MyApp
+
+    # List all tables
+    queryly schema list MyApp
+
+    # View table structure
+    queryly schema info MyApp users
+
+    # Browse data
+    queryly data browse MyApp users
+
+    # Export to CSV
+    queryly data export MyApp users csv
+    ```
+  </Tab>
+
+  <Tab title="Query & Analyze">
+    ```bash
+    # Enter query mode
+    queryly data query MyApp
+
+    # Run queries
+    SQL> SELECT COUNT(*) FROM users;
+    SQL> SELECT * FROM users WHERE email LIKE '%@example.com';
+    SQL> SELECT DATE(created_at), COUNT(*) 
+         FROM orders 
+         GROUP BY DATE(created_at);
+
+    # Exit query mode
+    SQL> exit
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Database file not found">
+    **Error**: `unable to open database file`
+
+    **Solutions**:
+    - Verify the file path is correct (check spelling and case)
+    - Use absolute paths to avoid confusion
+    - Ensure parent directory exists
+    - Check file permissions (must be readable)
+
+    ```bash
+    # Check if file exists
+    ls -l myapp.db
+
+    # Use absolute path
+    Data Source=/full/path/to/myapp.db
+    ```
+  </Accordion>
+
+  <Accordion title="Permission denied">
+    **Error**: `attempt to write a readonly database`
+
+    **Solutions**:
+    - Check file permissions: `chmod 664 myapp.db`
+    - Check directory permissions (SQLite needs write access to the directory)
+    - Ensure you're not accessing a read-only filesystem
+
+    ```bash
+    # Fix permissions
+    chmod 664 myapp.db
+    chmod 775 $(dirname myapp.db)
+    ```
+  </Accordion>
+
+  <Accordion title="Database is locked">
+    **Error**: `database is locked`
+
+    **Solutions**:
+    - Close other applications accessing the database
+    - Wait for long-running queries to complete
+    - Enable WAL mode for better concurrency
+    - Check for stale lock files (`.db-shm`, `.db-wal`)
+
+    ```bash
+    # Enable WAL mode
+    queryly data query MyApp
+    SQL> PRAGMA journal_mode=WAL;
+    ```
+  </Accordion>
+
+  <Accordion title="Corrupted database">
+    **Error**: `database disk image is malformed`
+
+    **Solutions**:
+    - Try to recover with `.recover` command in sqlite3
+    - Restore from backup if available
+    - Check disk space and filesystem integrity
+
+    ```bash
+    # Attempt recovery
+    sqlite3 myapp.db ".recover" | sqlite3 myapp_recovered.db
+
+    # Verify integrity
+    sqlite3 myapp.db "PRAGMA integrity_check;"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Check>**Use absolute paths** in production to avoid ambiguity</Check>
+<Check>**Enable WAL mode** for better concurrency</Check>
+<Check>**Run VACUUM** periodically to optimize storage</Check>
+<Check>**Regular backups** - simply copy the `.db` file</Check>
+<Check>**Foreign keys** - explicitly enable if your schema uses them</Check>
+
+<Warning>
+SQLite is not recommended for:
+- High-concurrency write workloads
+- Network/distributed access
+- Very large datasets (>100GB)
+- Multi-server deployments
+</Warning>
+
+## Working with Commands
+
+SQLite works with all Queryly commands:
+
+```bash
+# Connection management
+queryly connect add
+queryly connect list
+queryly connect test MyApp
+queryly connect remove MyApp
+
+# Schema exploration
+queryly schema list MyApp
+queryly schema info MyApp users
+queryly schema tree MyApp
+
+# Data operations
+queryly data browse MyApp users
+queryly data query MyApp
+queryly data export MyApp users csv
+queryly data export MyApp users json
+```
+
+<Card title="Command Reference" icon="terminal" href="/commands/overview">
+  See the complete command reference for all available options
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Learn how to explore database schemas
+  </Card>
+  <Card title="Data Operations" icon="table" href="/commands/data">
+    Browse and query table data
+  </Card>
+  <Card title="Providers Overview" icon="database" href="/providers/overview">
+    Compare all database providers
+  </Card>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Manage your database connections
+  </Card>
+</CardGroup>

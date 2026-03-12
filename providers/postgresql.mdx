@@ -1,0 +1,470 @@
+---
+title: PostgreSQL Provider
+description: Complete guide to using PostgreSQL with Queryly
+icon: elephant
+---
+
+PostgreSQL is a powerful, open-source relational database system known for its reliability, feature robustness, and performance. Queryly provides full support for connecting to and managing PostgreSQL databases.
+
+## Connection String Format
+
+The standard PostgreSQL connection string format:
+
+```
+Host=localhost;Database=mydb;Username=postgres;Password=secret
+```
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Local Database">
+    ### Default PostgreSQL Setup
+    ```bash
+    # Standard local connection
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass
+
+    # With explicit port (default is 5432)
+    Host=localhost;Port=5432;Database=myapp;Username=postgres;Password=mypass
+
+    # Using IP address
+    Host=127.0.0.1;Database=myapp;Username=postgres;Password=mypass
+    ```
+
+    <Note>
+    Default PostgreSQL port is `5432`. You can omit the `Port` parameter if using the default.
+    </Note>
+  </Tab>
+
+  <Tab title="Remote Database">
+    ### Remote Server Connection
+    ```bash
+    # Remote host with domain
+    Host=db.example.com;Database=production;Username=admin;Password=secure123
+
+    # Remote host with IP
+    Host=192.168.1.100;Database=production;Username=admin;Password=secure123
+
+    # Custom port
+    Host=db.example.com;Port=5433;Database=production;Username=admin;Password=secure123
+    ```
+
+    <Warning>
+    Ensure your PostgreSQL server's `pg_hba.conf` allows remote connections and the firewall permits traffic on port 5432.
+    </Warning>
+  </Tab>
+
+  <Tab title="With SSL">
+    ### Secure Connections
+    ```bash
+    # Require SSL
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Require
+
+    # Prefer SSL (falls back to non-SSL)
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Prefer
+
+    # Disable SSL (not recommended for remote)
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Disable
+
+    # Verify full certificate
+    Host=db.example.com;Database=myapp;Username=postgres;Password=mypass;SSL Mode=VerifyFull;Root Certificate=/path/to/ca.crt
+    ```
+
+    <Info>
+    SSL modes: `Disable`, `Allow`, `Prefer` (default), `Require`, `VerifyCA`, `VerifyFull`
+    </Info>
+  </Tab>
+
+  <Tab title="Advanced">
+    ### Advanced Configuration
+    ```bash
+    # Connection timeout
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;Timeout=30
+
+    # Command timeout
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;Command Timeout=60
+
+    # Connection pooling
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;Pooling=true;Maximum Pool Size=100
+
+    # Search path (schema)
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;Search Path=public,myschema
+
+    # Application name (visible in pg_stat_activity)
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;Application Name=Queryly
+    ```
+  </Tab>
+</Tabs>
+
+## Adding a PostgreSQL Connection
+
+### Interactive Mode
+```bash
+queryly connect add
+```
+
+Example session:
+```bash
+$ queryly connect add
+Enter connection name: ProductionDB
+Select database type: PostgreSQL
+Enter connection string: Host=localhost;Database=myapp;Username=postgres;Password=mypass
+✓ Connection test successful!
+✓ Connection 'ProductionDB' saved
+```
+
+## Supported Features
+
+<Check>**Connection Management** - Add, test, list, and remove connections</Check>
+<Check>**Schema Exploration** - List tables from the `public` schema</Check>
+<Check>**Table Browsing** - View table data with proper type handling</Check>
+<Check>**Query Execution** - Run PostgreSQL-specific SQL queries</Check>
+<Check>**Data Export** - Export tables to CSV or JSON formats</Check>
+
+<Note>
+Queryly currently focuses on the `public` schema. Support for multiple schemas is planned for future releases.
+</Note>
+
+## Port Configuration
+
+### Default Port
+PostgreSQL uses port **5432** by default. You can omit the port in your connection string:
+
+```bash
+Host=localhost;Database=myapp;Username=postgres;Password=mypass
+```
+
+### Custom Port
+If your PostgreSQL server runs on a different port:
+
+```bash
+Host=localhost;Port=5433;Database=myapp;Username=postgres;Password=mypass
+```
+
+### Checking PostgreSQL Port
+```bash
+# On the PostgreSQL server
+sudo netstat -plnt | grep postgres
+
+# Or check the configuration
+psql -U postgres -c "SHOW port;"
+```
+
+## Authentication Options
+
+<Tabs>
+  <Tab title="Password Auth">
+    ### Username/Password Authentication
+    ```bash
+    # Standard password authentication
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass
+
+    # User with @ symbol in username
+    Host=localhost;Database=myapp;Username=user@domain;Password=mypass
+    ```
+
+    <Tip>
+    Store connection strings securely. Consider using environment variables or secret management tools for production credentials.
+    </Tip>
+  </Tab>
+
+  <Tab title="No Password">
+    ### Trust Authentication (Local Only)
+    ```bash
+    # If pg_hba.conf is configured for trust
+    Host=localhost;Database=myapp;Username=postgres
+    ```
+
+    <Warning>
+    Trust authentication should only be used in development environments. Never use it in production.
+    </Warning>
+  </Tab>
+
+  <Tab title="Connection String">
+    ### PostgreSQL URI Format
+    While Queryly uses key-value pairs, PostgreSQL also supports URI format:
+
+    ```bash
+    # URI format (if your provider supports it)
+    postgresql://postgres:mypass@localhost:5432/myapp
+
+    # With SSL
+    postgresql://postgres:mypass@localhost:5432/myapp?sslmode=require
+    ```
+
+    <Info>
+    Queryly primarily uses the key-value format shown in other tabs. URI format may be supported depending on the underlying Npgsql driver version.
+    </Info>
+  </Tab>
+</Tabs>
+
+## PostgreSQL-Specific Features
+
+### Data Type Support
+
+Queryly handles PostgreSQL's rich type system:
+
+- **Numeric**: `integer`, `bigint`, `numeric`, `real`, `double precision`
+- **Text**: `varchar`, `text`, `char`
+- **Date/Time**: `timestamp`, `date`, `time`, `interval`
+- **Boolean**: `boolean`
+- **JSON**: `json`, `jsonb`
+- **Arrays**: All array types
+- **UUID**: `uuid`
+- **Network**: `inet`, `cidr`, `macaddr`
+
+### Query Examples
+
+<Tabs>
+  <Tab title="Basic Queries">
+    ```bash
+    queryly data query ProductionDB
+
+    # Select queries
+    SQL> SELECT * FROM users LIMIT 10;
+    SQL> SELECT COUNT(*) FROM orders;
+    SQL> SELECT name, email FROM customers WHERE created_at > '2024-01-01';
+    ```
+  </Tab>
+
+  <Tab title="PostgreSQL-Specific">
+    ```bash
+    # JSON queries
+    SQL> SELECT data->>'name' as name FROM users;
+    SQL> SELECT * FROM orders WHERE metadata @> '{"status": "completed"}';
+
+    # Array operations
+    SQL> SELECT * FROM posts WHERE tags @> ARRAY['postgresql'];
+
+    # Full-text search
+    SQL> SELECT * FROM articles WHERE to_tsvector(content) @@ to_tsquery('database');
+
+    # Window functions
+    SQL> SELECT name, salary, RANK() OVER (ORDER BY salary DESC) FROM employees;
+    ```
+  </Tab>
+
+  <Tab title="Information Queries">
+    ```bash
+    # Database size
+    SQL> SELECT pg_size_pretty(pg_database_size(current_database()));
+
+    # Table sizes
+    SQL> SELECT 
+           schemaname,
+           tablename,
+           pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename))
+         FROM pg_tables 
+         WHERE schemaname = 'public';
+
+    # Active connections
+    SQL> SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;
+
+    # Current user and database
+    SQL> SELECT current_user, current_database();
+    ```
+  </Tab>
+</Tabs>
+
+## Common Workflows
+
+<Tabs>
+  <Tab title="Initial Setup">
+    ```bash
+    # Add connection
+    queryly connect add
+    # name: MyPostgres
+    # type: PostgreSQL
+    # connection string: Host=localhost;Database=myapp;Username=postgres;Password=mypass
+
+    # Test connection
+    queryly connect test MyPostgres
+
+    # List all tables
+    queryly schema list MyPostgres
+    ```
+  </Tab>
+
+  <Tab title="Data Exploration">
+    ```bash
+    # View schema as tree
+    queryly schema tree MyPostgres
+
+    # Check table structure
+    queryly schema info MyPostgres users
+
+    # Browse table data
+    queryly data browse MyPostgres users
+
+    # Export to CSV
+    queryly data export MyPostgres users csv
+    ```
+  </Tab>
+
+  <Tab title="Analysis">
+    ```bash
+    # Enter query mode
+    queryly data query MyPostgres
+
+    # Analyze data
+    SQL> SELECT DATE(created_at), COUNT(*) 
+         FROM orders 
+         GROUP BY DATE(created_at) 
+         ORDER BY DATE(created_at);
+
+    SQL> SELECT status, AVG(total_amount) 
+         FROM orders 
+         GROUP BY status;
+
+    SQL> exit
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection refused">
+    **Error**: `Connection refused` or `could not connect to server`
+
+    **Solutions**:
+    - Verify PostgreSQL is running: `sudo systemctl status postgresql`
+    - Check the port: `sudo netstat -plnt | grep 5432`
+    - Verify `postgresql.conf` has `listen_addresses = '*'` (or specific IP)
+    - Check firewall rules: `sudo ufw status`
+
+    ```bash
+    # Start PostgreSQL
+    sudo systemctl start postgresql
+
+    # Check if it's listening
+    sudo ss -tlnp | grep 5432
+    ```
+  </Accordion>
+
+  <Accordion title="Authentication failed">
+    **Error**: `password authentication failed for user`
+
+    **Solutions**:
+    - Verify username and password are correct
+    - Check `pg_hba.conf` allows the authentication method
+    - Ensure user has access to the database
+
+    ```bash
+    # Reset password
+    sudo -u postgres psql
+    postgres=# ALTER USER postgres PASSWORD 'newpassword';
+
+    # Grant database access
+    postgres=# GRANT ALL PRIVILEGES ON DATABASE myapp TO myuser;
+    ```
+  </Accordion>
+
+  <Accordion title="Database does not exist">
+    **Error**: `database "myapp" does not exist`
+
+    **Solutions**:
+    - Verify database name (case-sensitive)
+    - Create the database if needed
+
+    ```bash
+    # List databases
+    sudo -u postgres psql -c "\l"
+
+    # Create database
+    sudo -u postgres createdb myapp
+    
+    # Or in psql
+    sudo -u postgres psql
+    postgres=# CREATE DATABASE myapp;
+    ```
+  </Accordion>
+
+  <Accordion title="Too many connections">
+    **Error**: `sorry, too many clients already`
+
+    **Solutions**:
+    - Close unused connections
+    - Increase `max_connections` in `postgresql.conf`
+    - Check for connection leaks
+
+    ```bash
+    # Check current connections
+    sudo -u postgres psql -c "SELECT count(*) FROM pg_stat_activity;"
+
+    # View connections by database
+    sudo -u postgres psql -c "SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;"
+    ```
+  </Accordion>
+
+  <Accordion title="SSL connection issues">
+    **Error**: `SSL is not enabled on the server`
+
+    **Solutions**:
+    - Change SSL mode to `Prefer` or `Disable` for local development
+    - Enable SSL in `postgresql.conf` if required
+
+    ```bash
+    # For local development
+    Host=localhost;Database=myapp;Username=postgres;Password=mypass;SSL Mode=Disable
+
+    # Check SSL status
+    sudo -u postgres psql -c "SHOW ssl;"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Check>**Use SSL** for remote connections</Check>
+<Check>**Connection pooling** - enable for better performance</Check>
+<Check>**Least privilege** - create users with minimal required permissions</Check>
+<Check>**Regular backups** - use `pg_dump` for database backups</Check>
+<Check>**Monitor connections** - track active connections with `pg_stat_activity`</Check>
+
+<Warning>
+Avoid using the `postgres` superuser for application connections. Create dedicated users with appropriate permissions.
+</Warning>
+
+## Working with Commands
+
+PostgreSQL works with all Queryly commands:
+
+```bash
+# Connection management
+queryly connect add
+queryly connect list
+queryly connect test MyPostgres
+queryly connect remove MyPostgres
+
+# Schema exploration
+queryly schema list MyPostgres
+queryly schema info MyPostgres users
+queryly schema tree MyPostgres
+
+# Data operations
+queryly data browse MyPostgres users
+queryly data query MyPostgres
+queryly data export MyPostgres users csv
+queryly data export MyPostgres users json
+```
+
+<Card title="Command Reference" icon="terminal" href="/commands/overview">
+  See the complete command reference for all available options
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Learn how to explore PostgreSQL schemas
+  </Card>
+  <Card title="Data Operations" icon="table" href="/commands/data">
+    Browse and query table data
+  </Card>
+  <Card title="Providers Overview" icon="database" href="/providers/overview">
+    Compare all database providers
+  </Card>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Manage your database connections
+  </Card>
+</CardGroup>

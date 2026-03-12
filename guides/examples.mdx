@@ -1,0 +1,532 @@
+---
+title: Usage Examples
+description: Real-world examples and workflows for common Queryly tasks
+---
+
+## Quick Start Example
+
+Get started with Queryly in under a minute:
+
+<Steps>
+
+<Step title="Add your first connection">
+```bash
+queryly connect add
+```
+
+You'll be prompted to enter:
+- **Connection name**: e.g., "LocalDB"
+- **Database type**: SQLite, PostgreSQL, MySQL, or SQL Server
+- **Connection string**: e.g., `Data Source=mydb.db`
+
+The connection will be tested before saving.
+</Step>
+
+<Step title="List your connections">
+```bash
+queryly connect list
+```
+
+Shows all saved connections with their type and last used date.
+</Step>
+
+<Step title="Explore your database">
+```bash
+queryly schema list LocalDB
+queryly data browse LocalDB users
+```
+</Step>
+
+</Steps>
+
+## Working with a SQLite Database
+
+This example demonstrates a complete workflow from creating a database to exporting data.
+
+<Steps>
+
+<Step title="Create a test database">
+First, create a SQLite database with some sample data:
+
+```bash
+sqlite3 myapp.db
+```
+
+```sql
+CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT);
+INSERT INTO users VALUES (1, 'Alice', 'alice@example.com');
+INSERT INTO users VALUES (2, 'Bob', 'bob@example.com');
+.quit
+```
+</Step>
+
+<Step title="Add to Queryly">
+Register the database with Queryly:
+
+```bash
+queryly connect add
+```
+
+When prompted, enter:
+- **name**: `MyApp`
+- **type**: `SQLite`
+- **connection string**: `Data Source=myapp.db`
+
+```bash
+✓ Connection test successful!
+✓ Connection 'MyApp' saved
+```
+</Step>
+
+<Step title="Explore the schema">
+View database structure:
+
+```bash
+queryly schema list MyApp
+```
+
+```
+Tables in MyApp:
+┌──────────┬──────────┬──────────┐
+│ Name     │ Rows     │ Type     │
+├──────────┼──────────┼──────────┤
+│ users    │ 2        │ Table    │
+└──────────┴──────────┴──────────┘
+```
+
+View table structure:
+
+```bash
+queryly schema info MyApp users
+```
+
+```
+Table: users
+┌──────────┬──────────┬────────────┬─────────────┐
+│ Column   │ Type     │ Nullable   │ Default     │
+├──────────┼──────────┼────────────┼─────────────┤
+│ id       │ INTEGER  │ NO         │ PRIMARY KEY │
+│ name     │ TEXT     │ YES        │             │
+│ email    │ TEXT     │ YES        │             │
+└──────────┴──────────┴────────────┴─────────────┘
+```
+</Step>
+
+<Step title="Browse the data">
+View table contents:
+
+```bash
+queryly data browse MyApp users
+```
+
+```
+┌─────┬─────────┬─────────────────────┐
+│ id  │ name    │ email               │
+├─────┼─────────┼─────────────────────┤
+│ 1   │ Alice   │ alice@example.com   │
+│ 2   │ Bob     │ bob@example.com     │
+└─────┴─────────┴─────────────────────┘
+Showing 2 of 2 row(s)
+```
+</Step>
+
+<Step title="Query the data">
+Enter interactive query mode:
+
+```bash
+queryly data query MyApp
+```
+
+```sql
+SQL> SELECT * FROM users WHERE name LIKE 'A%'
+```
+
+```
+┌─────┬─────────┬─────────────────────┐
+│ id  │ name    │ email               │
+├─────┼─────────┼─────────────────────┤
+│ 1   │ Alice   │ alice@example.com   │
+└─────┴─────────┴─────────────────────┘
+Showing 1 of 1 row(s) | Query time: 1.45ms
+```
+
+```sql
+SQL> exit
+```
+</Step>
+
+<Step title="Export the data">
+Export to CSV or JSON:
+
+```bash
+queryly data export MyApp users csv
+```
+
+```
+✓ Exported 2 rows to users.csv
+```
+
+```bash
+queryly data export MyApp users json
+```
+
+```
+✓ Exported 2 rows to users.json
+```
+</Step>
+
+</Steps>
+
+## Interactive Query Session
+
+Demonstrates advanced querying with real terminal output:
+
+```bash
+$ queryly data query MyDB
+
+Query Mode - MyDB
+Enter SQL queries. Type 'exit' to quit.
+```
+
+**Count all users:**
+
+```sql
+SQL> SELECT COUNT(*) FROM users
+```
+
+```
+┌────────────┐
+│ COUNT(*)   │
+├────────────┤
+│ 1234       │
+└────────────┘
+Showing 1 of 1 row(s) | Query time: 2.34ms
+```
+
+**Retrieve user details:**
+
+```sql
+SQL> SELECT name, email FROM users LIMIT 5
+```
+
+```
+┌──────────────┬──────────────────────┐
+│ name         │ email                │
+├──────────────┼──────────────────────┤
+│ Alice Smith  │ alice@example.com    │
+│ Bob Jones    │ bob@example.com      │
+│ Carol Lee    │ carol@example.com    │
+│ David Kim    │ david@example.com    │
+│ Emma Wilson  │ emma@example.com     │
+└──────────────┴──────────────────────┘
+Showing 5 of 5 row(s) | Query time: 1.23ms
+```
+
+**Exit query mode:**
+
+```sql
+SQL> exit
+Exited query mode.
+```
+
+## Multi-Database Workflow
+
+Managing multiple databases efficiently:
+
+<Steps>
+
+<Step title="Add multiple connections">
+```bash
+# Add development database
+queryly connect add
+# name: Dev-SQLite, type: SQLite, connection: Data Source=./dev.db
+
+# Add staging database  
+queryly connect add
+# name: Staging-PostgreSQL, type: PostgreSQL
+# connection: Host=localhost;Database=staging;Username=postgres;Password=pass
+
+# Add production database (read-only)
+queryly connect add
+# name: Prod-MySQL, type: MySQL
+# connection: Server=prod.example.com;Database=app;User=readonly;Password=secret
+```
+</Step>
+
+<Step title="List all connections">
+```bash
+queryly connect list
+```
+
+```
+Saved Connections:
+┌──────────────────────┬──────────────┬─────────────────────┐
+│ Name                 │ Type         │ Last Used           │
+├──────────────────────┼──────────────┼─────────────────────┤
+│ Dev-SQLite           │ SQLite       │ 2026-03-12 10:30    │
+│ Staging-PostgreSQL   │ PostgreSQL   │ 2026-03-11 14:22    │
+│ Prod-MySQL           │ MySQL        │ 2026-03-10 09:15    │
+└──────────────────────┴──────────────┴─────────────────────┘
+```
+</Step>
+
+<Step title="Compare schemas across environments">
+```bash
+# Check dev schema
+queryly schema list Dev-SQLite
+
+# Check staging schema
+queryly schema list Staging-PostgreSQL
+
+# Verify production schema
+queryly schema list Prod-MySQL
+```
+</Step>
+
+<Step title="Test all connections">
+```bash
+queryly connect test Dev-SQLite
+queryly connect test Staging-PostgreSQL
+queryly connect test Prod-MySQL
+```
+</Step>
+
+</Steps>
+
+## Data Export Workflows
+
+### Export Single Table
+
+```bash
+# Export users table to CSV
+queryly data export MyDB users csv
+```
+
+**Output:**
+```
+✓ Exported 1,234 rows to users.csv
+```
+
+**Generated CSV:**
+```csv
+id,name,email
+1,Alice,alice@example.com
+2,Bob,bob@example.com
+```
+
+### Export to JSON
+
+```bash
+# Export orders table to JSON
+queryly data export MyDB orders json
+```
+
+**Output:**
+```
+✓ Exported 5,678 rows to orders.json
+```
+
+**Generated JSON:**
+```json
+[
+  {
+    "id": 1,
+    "customer_id": 101,
+    "total": 99.99,
+    "created_at": "2026-03-01T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "customer_id": 102,
+    "total": 149.50,
+    "created_at": "2026-03-02T14:30:00Z"
+  }
+]
+```
+
+### Bulk Export Workflow
+
+<Steps>
+
+<Step title="List all tables">
+```bash
+queryly schema list MyDB
+```
+</Step>
+
+<Step title="Export each table">
+```bash
+queryly data export MyDB users csv
+queryly data export MyDB orders csv
+queryly data export MyDB products csv
+```
+</Step>
+
+<Step title="Organize exports">
+```bash
+mkdir -p exports/mydb-$(date +%Y%m%d)
+mv *.csv exports/mydb-$(date +%Y%m%d)/
+```
+</Step>
+
+</Steps>
+
+## Schema Exploration
+
+### View All Tables
+
+```bash
+queryly schema list MyDB
+```
+
+```
+Tables in MyDB:
+┌──────────────┬──────────┬──────────┐
+│ Name         │ Rows     │ Type     │
+├──────────────┼──────────┼──────────┤
+│ users        │ 1,234    │ Table    │
+│ orders       │ 5,678    │ Table    │
+│ products     │ 890      │ Table    │
+│ categories   │ 45       │ Table    │
+└──────────────┴──────────┴──────────┘
+```
+
+### View Table Details
+
+```bash
+queryly schema info MyDB users
+```
+
+```
+Table: users
+┌──────────────┬──────────────┬────────────┬─────────────────┐
+│ Column       │ Type         │ Nullable   │ Default         │
+├──────────────┼──────────────┼────────────┼─────────────────┤
+│ id           │ INTEGER      │ NO         │ PRIMARY KEY     │
+│ name         │ VARCHAR(100) │ NO         │                 │
+│ email        │ VARCHAR(255) │ NO         │                 │
+│ created_at   │ TIMESTAMP    │ YES        │ CURRENT_TIME    │
+│ updated_at   │ TIMESTAMP    │ YES        │ CURRENT_TIME    │
+└──────────────┴──────────────┴────────────┴─────────────────┘
+```
+
+### View Schema as Tree
+
+```bash
+queryly schema tree MyDB
+```
+
+```
+MyDB
+├── users
+│   ├── id (INTEGER, PRIMARY KEY)
+│   ├── name (VARCHAR)
+│   └── email (VARCHAR)
+├── orders
+│   ├── id (INTEGER, PRIMARY KEY)
+│   ├── user_id (INTEGER, FOREIGN KEY)
+│   └── total (DECIMAL)
+└── products
+    ├── id (INTEGER, PRIMARY KEY)
+    └── name (VARCHAR)
+```
+
+## Connection Management
+
+### Add Connection Interactively
+
+```bash
+queryly connect add
+```
+
+**Example session:**
+```
+? Connection name: LocalDB
+? Database type: SQLite
+? Connection string: Data Source=./myapp.db
+
+Testing connection...
+✓ Connection test successful!
+✓ Connection 'LocalDB' saved
+```
+
+### Test Connection
+
+```bash
+queryly connect test LocalDB
+```
+
+```
+Testing connection to 'LocalDB'...
+✓ Connection successful
+Database: SQLite
+Path: ./myapp.db
+```
+
+### Remove Connection
+
+```bash
+queryly connect remove OldDB
+```
+
+```
+? Are you sure you want to remove 'OldDB'? (y/n): y
+✓ Connection 'OldDB' removed
+```
+
+## Advanced Query Examples
+
+### Aggregation Queries
+
+```sql
+SQL> SELECT department, COUNT(*) as employee_count, AVG(salary) as avg_salary 
+     FROM employees 
+     GROUP BY department
+```
+
+### Join Queries
+
+```sql
+SQL> SELECT u.name, COUNT(o.id) as order_count 
+     FROM users u 
+     LEFT JOIN orders o ON u.id = o.user_id 
+     GROUP BY u.name
+```
+
+### Complex Filtering
+
+```sql
+SQL> SELECT * FROM products 
+     WHERE price BETWEEN 10 AND 100 
+     AND category IN ('Electronics', 'Books') 
+     ORDER BY price DESC 
+     LIMIT 20
+```
+
+## Tips and Best Practices
+
+<Tip>
+**Use Descriptive Names**: Name connections clearly like `Dev-SQLite`, `Staging-PostgreSQL`, `Prod-ReadOnly-MySQL` to avoid confusion.
+</Tip>
+
+<Tip>
+**Test Before Querying**: Always run `queryly connect test <name>` before working with a new connection to verify credentials.
+</Tip>
+
+<Tip>
+**Browse Before Exporting**: Use `queryly data browse` to preview data before exporting large tables.
+</Tip>
+
+<Tip>
+**Use Query Mode for Exploration**: The interactive query mode is perfect for ad-hoc analysis without switching tools.
+</Tip>
+
+<Warning>
+For production databases, always use read-only credentials to prevent accidental data modifications.
+</Warning>
+
+## Next Steps
+
+- [Configuration Guide](/guides/configuration) - Learn about advanced configuration options
+- [Troubleshooting](/guides/troubleshooting) - Fix common issues
+- [Command Reference](/commands/overview) - Explore all available commands

@@ -1,0 +1,715 @@
+---
+title: Troubleshooting Guide
+description: Solutions to common issues when using Queryly
+---
+
+## Common Issues
+
+This guide covers the most common problems you might encounter and how to solve them.
+
+## Connection Issues
+
+<Accordion title="Connection Test Fails">
+
+**Problem**: You see "Connection test failed" when adding a connection.
+
+**Symptoms**:
+```bash
+$ queryly connect add
+? Connection name: MyDB
+? Database type: SQLite
+? Connection string: Data Source=mydb.db
+
+Testing connection...
+✗ Connection test failed: Unable to open database file
+```
+
+**Solutions**:
+
+1. **Verify Connection String Format**
+   
+   Ensure you're using the correct format for your database type:
+   
+   <CodeGroup>
+   
+   ```bash SQLite
+   Data Source=./mydb.db
+   ```
+   
+   ```bash PostgreSQL
+   Host=localhost;Database=mydb;Username=postgres;Password=secret
+   ```
+   
+   ```bash MySQL
+   Server=localhost;Database=mydb;User=root;Password=secret
+   ```
+   
+   ```bash SQL Server
+   Server=localhost;Database=mydb;User Id=sa;Password=secret;TrustServerCertificate=True
+   ```
+   
+   </CodeGroup>
+
+2. **Check Database File Exists (SQLite)**
+   
+   ```bash
+   # Verify the file exists
+   ls -la mydb.db
+   
+   # Check the path is correct
+   pwd  # See current directory
+   ```
+   
+   <Tip>
+   Use absolute paths if relative paths aren't working: `Data Source=/full/path/to/mydb.db`
+   </Tip>
+
+3. **Verify Read Permissions**
+   
+   ```bash
+   # Check file permissions (macOS/Linux)
+   ls -l mydb.db
+   
+   # Give yourself read access if needed
+   chmod 644 mydb.db
+   ```
+
+4. **Test Database Connection Separately**
+   
+   <CodeGroup>
+   
+   ```bash SQLite
+   sqlite3 mydb.db "SELECT 1;"
+   ```
+   
+   ```bash PostgreSQL
+   psql -h localhost -U postgres -d mydb -c "SELECT 1;"
+   ```
+   
+   ```bash MySQL
+   mysql -h localhost -u root -p mydb -e "SELECT 1;"
+   ```
+   
+   </CodeGroup>
+
+5. **Check Network Connectivity (Remote Databases)**
+   
+   ```bash
+   # Test if server is reachable
+   ping db.example.com
+   
+   # Test if port is open
+   telnet db.example.com 5432  # PostgreSQL
+   telnet db.example.com 3306  # MySQL
+   telnet db.example.com 1433  # SQL Server
+   ```
+
+</Accordion>
+
+<Accordion title="Connection String Not Accepted">
+
+**Problem**: Your connection string format is rejected.
+
+**Solutions**:
+
+1. **Remove Quotes**: Don't wrap the connection string in quotes
+   ```bash
+   # ✗ Incorrect
+   "Data Source=mydb.db"
+   
+   # ✓ Correct
+   Data Source=mydb.db
+   ```
+
+2. **Check for Typos**: Common mistakes include:
+   - `DataSource` instead of `Data Source` (SQLite)
+   - `Username` instead of `User` (MySQL)
+   - `UserId` instead of `User Id` (SQL Server)
+
+3. **Escape Special Characters**: If your password contains special characters:
+   ```bash
+   # Use URL encoding or escape characters
+   Password=my%40password  # @ symbol encoded
+   ```
+
+</Accordion>
+
+<Accordion title="'Connection Not Found' Error">
+
+**Problem**: Queryly can't find a connection you know you saved.
+
+**Solutions**:
+
+1. **List All Connections**
+   ```bash
+   queryly connect list
+   ```
+   Verify the exact name (case-sensitive).
+
+2. **Check Configuration File**
+   ```bash
+   # macOS/Linux
+   cat ~/.queryly/connections.json
+   
+   # Windows (PowerShell)
+   Get-Content $env:USERPROFILE\.queryly\connections.json
+   ```
+
+3. **Verify JSON Syntax**
+   If you manually edited the file, ensure it's valid JSON:
+   ```bash
+   # Validate JSON (if jq is installed)
+   jq empty ~/.queryly/connections.json
+   ```
+
+</Accordion>
+
+## Installation Issues
+
+<Accordion title="Command Not Found">
+
+**Problem**: You see `queryly: command not found` when trying to run Queryly.
+
+**Symptoms**:
+```bash
+$ queryly connect list
+queryly: command not found
+```
+
+**Solutions**:
+
+1. **Use Full dotnet run Command**
+   
+   Queryly is not installed as a global tool yet. Run it with:
+   
+   ```bash
+   dotnet run --project src/Queryly.CLI/Queryly.CLI.csproj
+   ```
+
+2. **Create an Alias (macOS/Linux)**
+   
+   Add to your `~/.bashrc` or `~/.zshrc`:
+   
+   ```bash
+   alias queryly='dotnet run --project /path/to/queryly/src/Queryly.CLI/Queryly.CLI.csproj'
+   ```
+   
+   Then reload:
+   ```bash
+   source ~/.bashrc  # or ~/.zshrc
+   ```
+
+3. **Check .NET SDK Installation**
+   
+   ```bash
+   dotnet --version
+   ```
+   
+   Should output version 8.0 or higher. If not installed:
+   
+   ```bash
+   # Download from:
+   # https://dotnet.microsoft.com/download
+   ```
+
+4. **Verify Project Build**
+   
+   ```bash
+   cd /path/to/queryly
+   dotnet build
+   ```
+
+</Accordion>
+
+<Accordion title=".NET SDK Not Found">
+
+**Problem**: Error about missing .NET SDK.
+
+**Solutions**:
+
+1. **Install .NET 8.0 SDK**
+   
+   Download from: https://dotnet.microsoft.com/download
+   
+   <CodeGroup>
+   
+   ```bash macOS (Homebrew)
+   brew install --cask dotnet-sdk
+   ```
+   
+   ```bash Ubuntu/Debian
+   wget https://dot.net/v1/dotnet-install.sh
+   chmod +x dotnet-install.sh
+   ./dotnet-install.sh --channel 8.0
+   ```
+   
+   ```bash Windows
+   # Download installer from:
+   # https://dotnet.microsoft.com/download/dotnet/8.0
+   ```
+   
+   </CodeGroup>
+
+2. **Verify Installation**
+   ```bash
+   dotnet --list-sdks
+   ```
+
+</Accordion>
+
+## Schema and Data Issues
+
+<Accordion title="No Tables Found">
+
+**Problem**: "No tables found" message when listing schema.
+
+**Symptoms**:
+```bash
+$ queryly schema list MyDB
+No tables found in database.
+```
+
+**Solutions**:
+
+1. **Verify Database Has Tables**
+   
+   Use another tool to confirm:
+   
+   ```bash
+   # SQLite
+   sqlite3 mydb.db ".tables"
+   
+   # PostgreSQL
+   psql -h localhost -U postgres -d mydb -c "\dt"
+   
+   # MySQL
+   mysql -h localhost -u root -p mydb -e "SHOW TABLES;"
+   ```
+
+2. **Check Connection String Points to Correct Database**
+   
+   ```bash
+   queryly connect test MyDB
+   ```
+   
+   Verify the database name in the output.
+
+3. **Verify Permissions**
+   
+   Ensure your database user has permission to read schema:
+   
+   ```sql
+   -- PostgreSQL: Check permissions
+   SELECT * FROM information_schema.table_privileges 
+   WHERE grantee = 'your_username';
+   ```
+
+4. **Check Schema Name (SQL Server/PostgreSQL)**
+   
+   Some databases use schemas. Queryly defaults to common schemas, but you might need a different one:
+   
+   ```sql
+   -- PostgreSQL: List all schemas
+   SELECT schema_name FROM information_schema.schemata;
+   
+   -- SQL Server: List schemas
+   SELECT name FROM sys.schemas;
+   ```
+
+</Accordion>
+
+<Accordion title="Table Data Not Displaying">
+
+**Problem**: `queryly data browse` shows no rows when you know the table has data.
+
+**Solutions**:
+
+1. **Verify Table Has Data**
+   ```bash
+   queryly data query MyDB
+   SQL> SELECT COUNT(*) FROM users;
+   ```
+
+2. **Check for Case Sensitivity**
+   
+   Table names might be case-sensitive:
+   ```bash
+   # Try different cases
+   queryly data browse MyDB Users
+   queryly data browse MyDB USERS
+   queryly data browse MyDB users
+   ```
+
+3. **Use Query Mode to Debug**
+   ```bash
+   queryly data query MyDB
+   SQL> SELECT * FROM users LIMIT 10;
+   ```
+
+</Accordion>
+
+<Accordion title="Export Fails">
+
+**Problem**: Export command fails or produces an empty file.
+
+**Symptoms**:
+```bash
+$ queryly data export MyDB users csv
+✗ Export failed: Access denied
+```
+
+**Solutions**:
+
+1. **Check Write Permissions**
+   
+   Ensure you have write access to the current directory:
+   
+   ```bash
+   # Check current directory
+   pwd
+   
+   # Check permissions
+   ls -ld .
+   
+   # Try exporting to a different directory
+   cd ~/Documents
+   queryly data export MyDB users csv
+   ```
+
+2. **Verify Table Name**
+   
+   ```bash
+   queryly schema list MyDB
+   ```
+   
+   Ensure the table name is correct (case-sensitive).
+
+3. **Check Table Has Data**
+   
+   ```bash
+   queryly data browse MyDB users
+   ```
+   
+   If the table is empty, export will create an empty file.
+
+4. **Check Disk Space**
+   
+   ```bash
+   # Check available space
+   df -h .
+   ```
+
+5. **Try Different Format**
+   
+   If CSV fails, try JSON:
+   ```bash
+   queryly data export MyDB users json
+   ```
+
+</Accordion>
+
+## Query Issues
+
+<Accordion title="Query Mode Freezes">
+
+**Problem**: Interactive query mode becomes unresponsive.
+
+**Solutions**:
+
+1. **Exit with Ctrl+C**
+   
+   Press `Ctrl+C` to force exit.
+
+2. **Check for Long-Running Query**
+   
+   If you ran a complex query, it might be processing. Wait or cancel with `Ctrl+C`.
+
+3. **Simplify Query**
+   
+   Break complex queries into smaller parts:
+   ```sql
+   -- Instead of a complex JOIN, start simple
+   SQL> SELECT * FROM users LIMIT 10;
+   ```
+
+</Accordion>
+
+<Accordion title="SQL Syntax Error">
+
+**Problem**: Your query returns a syntax error.
+
+**Solutions**:
+
+1. **Check SQL Dialect**
+   
+   Different databases have different syntax:
+   
+   <CodeGroup>
+   
+   ```sql SQLite
+   -- Use LIMIT
+   SELECT * FROM users LIMIT 10;
+   ```
+   
+   ```sql SQL Server
+   -- Use TOP
+   SELECT TOP 10 * FROM users;
+   ```
+   
+   ```sql PostgreSQL/MySQL
+   -- Use LIMIT
+   SELECT * FROM users LIMIT 10;
+   ```
+   
+   </CodeGroup>
+
+2. **Quote Table/Column Names**
+   
+   If names contain spaces or special characters:
+   
+   ```sql
+   -- SQLite/PostgreSQL
+   SELECT * FROM "user data";
+   
+   -- SQL Server
+   SELECT * FROM [user data];
+   
+   -- MySQL
+   SELECT * FROM `user data`;
+   ```
+
+3. **Test in Native Client First**
+   
+   Verify the query works in the database's native client before using Queryly.
+
+</Accordion>
+
+## Configuration Issues
+
+<Accordion title="Configuration File Corrupted">
+
+**Problem**: Queryly won't start due to corrupted configuration.
+
+**Solutions**:
+
+1. **Validate JSON**
+   
+   ```bash
+   # Check for JSON errors
+   cat ~/.queryly/connections.json
+   ```
+
+2. **Backup and Reset**
+   
+   ```bash
+   # Backup existing config
+   cp ~/.queryly/connections.json ~/.queryly/connections.backup.json
+   
+   # Remove corrupted file
+   rm ~/.queryly/connections.json
+   
+   # Queryly will create a fresh one on next run
+   ```
+
+3. **Manually Fix JSON**
+   
+   Common issues:
+   - Missing commas between objects
+   - Trailing commas
+   - Unescaped quotes in strings
+   
+   Use a JSON validator: https://jsonlint.com/
+
+</Accordion>
+
+<Accordion title="Lost Connections After Update">
+
+**Problem**: Connections disappeared after updating Queryly.
+
+**Solutions**:
+
+1. **Check Backup**
+   
+   ```bash
+   ls -la ~/.queryly/
+   ```
+   
+   Look for `connections.backup.json` or similar.
+
+2. **Restore from Backup**
+   
+   ```bash
+   cp ~/.queryly/connections.backup.json ~/.queryly/connections.json
+   ```
+
+3. **Manually Recreate**
+   
+   If no backup exists, re-add connections:
+   ```bash
+   queryly connect add
+   ```
+
+</Accordion>
+
+## Platform-Specific Issues
+
+<Accordion title="Windows: Path Not Found">
+
+**Problem**: SQLite database path not found on Windows.
+
+**Solutions**:
+
+1. **Use Forward Slashes**
+   ```
+   Data Source=C:/Users/username/mydb.db
+   ```
+
+2. **Or Use Double Backslashes**
+   ```
+   Data Source=C:\\Users\\username\\mydb.db
+   ```
+
+3. **Use Relative Path**
+   ```
+   Data Source=./mydb.db
+   ```
+
+</Accordion>
+
+<Accordion title="macOS: Permission Denied">
+
+**Problem**: Permission denied errors on macOS.
+
+**Solutions**:
+
+1. **Check File Permissions**
+   ```bash
+   ls -l mydb.db
+   chmod 644 mydb.db
+   ```
+
+2. **Grant Full Disk Access**
+   
+   System Preferences → Security & Privacy → Privacy → Full Disk Access → Add Terminal
+
+</Accordion>
+
+<Accordion title="Linux: Library Not Found">
+
+**Problem**: Missing library errors on Linux.
+
+**Solutions**:
+
+1. **Install Required Libraries**
+   
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update
+   sudo apt-get install libicu-dev
+   
+   # Fedora/RHEL
+   sudo dnf install icu
+   ```
+
+2. **Install Database Client Libraries**
+   
+   <CodeGroup>
+   
+   ```bash PostgreSQL
+   sudo apt-get install libpq-dev
+   ```
+   
+   ```bash MySQL
+   sudo apt-get install libmysqlclient-dev
+   ```
+   
+   </CodeGroup>
+
+</Accordion>
+
+## Performance Issues
+
+<Accordion title="Slow Query Execution">
+
+**Problem**: Queries take too long to execute.
+
+**Solutions**:
+
+1. **Add LIMIT Clause**
+   ```sql
+   SELECT * FROM large_table LIMIT 100;
+   ```
+
+2. **Check Database Indexes**
+   
+   Ensure proper indexes exist on frequently queried columns.
+
+3. **Use Browse Instead of Query**
+   
+   For simple table viewing, `browse` is optimized:
+   ```bash
+   queryly data browse MyDB large_table
+   ```
+
+</Accordion>
+
+<Accordion title="Large Export Times Out">
+
+**Problem**: Exporting large tables fails or times out.
+
+**Solutions**:
+
+1. **Export in Batches**
+   
+   Use query mode to export specific ranges:
+   ```sql
+   SQL> SELECT * FROM large_table WHERE id BETWEEN 1 AND 10000;
+   ```
+   
+   Then export the results.
+
+2. **Use Native Database Tools**
+   
+   For very large exports, use database-specific tools:
+   
+   ```bash
+   # SQLite
+   sqlite3 mydb.db ".mode csv" ".output data.csv" "SELECT * FROM table;"
+   
+   # PostgreSQL
+   psql -d mydb -c "COPY table TO '/tmp/data.csv' CSV HEADER;"
+   
+   # MySQL
+   mysql -e "SELECT * FROM table INTO OUTFILE '/tmp/data.csv'"
+   ```
+
+</Accordion>
+
+## Getting Help
+
+If you're still experiencing issues:
+
+<Note>
+**Report Issues**: Open an issue on [GitHub](https://github.com/Ayine-nongre/queryly/issues) with:
+- Error message (full text)
+- Queryly version
+- Operating system
+- Database type and version
+- Steps to reproduce
+</Note>
+
+<Tip>
+**Community Support**: Connect with other users:
+- GitHub Discussions
+- Stack Overflow (tag: `queryly`)
+</Tip>
+
+<Tip>
+**Check Logs**: Enable verbose logging if available to see detailed error information.
+</Tip>
+
+## Next Steps
+
+- [Configuration Guide](/guides/configuration) - Learn about configuration options
+- [Usage Examples](/guides/examples) - See working examples
+- [Command Reference](/commands/overview) - Explore all commands

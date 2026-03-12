@@ -1,0 +1,537 @@
+---
+title: SQL Server Provider
+description: Complete guide to using SQL Server with Queryly
+icon: server
+---
+
+SQL Server is Microsoft's enterprise-grade relational database management system. Queryly provides full support for SQL Server, including LocalDB, named instances, and remote servers.
+
+## Connection String Format
+
+The standard SQL Server connection string format:
+
+```
+Server=localhost;Database=mydb;User Id=sa;Password=secret;TrustServerCertificate=True
+```
+
+## Connection Examples
+
+<Tabs>
+  <Tab title="Local Database">
+    ### Standard Local SQL Server
+    ```bash
+    # SQL Server with SQL Authentication
+    Server=localhost;Database=myapp;User Id=sa;Password=YourPassword123;TrustServerCertificate=True
+
+    # With instance name
+    Server=localhost\SQLEXPRESS;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+
+    # Using IP address
+    Server=127.0.0.1;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+    ```
+
+    <Note>
+    `TrustServerCertificate=True` is required when connecting to SQL Server without a valid SSL certificate (common in development).
+    </Note>
+  </Tab>
+
+  <Tab title="LocalDB">
+    ### SQL Server LocalDB
+    ```bash
+    # Default LocalDB instance
+    Server=(localdb)\MSSQLLocalDB;Database=myapp;Integrated Security=true
+
+    # Named LocalDB instance
+    Server=(localdb)\MyInstance;Database=myapp;Integrated Security=true
+
+    # LocalDB with trusted connection
+    Server=(localdb)\MSSQLLocalDB;Database=myapp;Integrated Security=SSPI
+    ```
+
+    <Info>
+    LocalDB is a lightweight version of SQL Server Express designed for developers. It's perfect for local development on Windows.
+    </Info>
+  </Tab>
+
+  <Tab title="Windows Auth">
+    ### Windows Authentication
+    ```bash
+    # Integrated Security (Windows Auth)
+    Server=localhost;Database=myapp;Integrated Security=true
+
+    # Alternative syntax
+    Server=localhost;Database=myapp;Integrated Security=SSPI
+
+    # With instance name
+    Server=localhost\SQLEXPRESS;Database=myapp;Integrated Security=true
+
+    # Trusted connection (equivalent)
+    Server=localhost;Database=myapp;Trusted_Connection=True
+    ```
+
+    <Tip>
+    Windows Authentication is more secure than SQL Authentication when working in a Windows domain environment.
+    </Tip>
+  </Tab>
+
+  <Tab title="Remote Database">
+    ### Remote SQL Server
+    ```bash
+    # Remote server with SQL Authentication
+    Server=db.example.com;Database=production;User Id=admin;Password=secure123;TrustServerCertificate=True
+
+    # Remote server with custom port
+    Server=db.example.com,1433;Database=production;User Id=admin;Password=secure123;TrustServerCertificate=True
+
+    # Remote server with encryption
+    Server=db.example.com;Database=production;User Id=admin;Password=secure123;Encrypt=True;TrustServerCertificate=False
+    ```
+
+    <Warning>
+    Ensure SQL Server is configured for remote connections and TCP/IP is enabled in SQL Server Configuration Manager.
+    </Warning>
+  </Tab>
+
+  <Tab title="Advanced">
+    ### Advanced Configuration
+    ```bash
+    # Connection timeout
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;Connection Timeout=30;TrustServerCertificate=True
+
+    # Command timeout
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;Command Timeout=60;TrustServerCertificate=True
+
+    # Connection pooling
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;Pooling=true;Max Pool Size=100;TrustServerCertificate=True
+
+    # Multiple Active Result Sets (MARS)
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;MultipleActiveResultSets=true;TrustServerCertificate=True
+
+    # Application name (visible in SQL Server logs)
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;Application Name=Queryly;TrustServerCertificate=True
+    ```
+  </Tab>
+</Tabs>
+
+## Adding a SQL Server Connection
+
+### Interactive Mode
+```bash
+queryly connect add
+```
+
+Example session:
+```bash
+$ queryly connect add
+Enter connection name: ProductionSQL
+Select database type: SQL Server
+Enter connection string: Server=localhost;Database=myapp;User Id=sa;Password=YourPassword123;TrustServerCertificate=True
+✓ Connection test successful!
+✓ Connection 'ProductionSQL' saved
+```
+
+## Supported Features
+
+<Check>**Connection Management** - Add, test, list, and remove connections</Check>
+<Check>**Schema Exploration** - List tables with schema support (dbo, custom schemas)</Check>
+<Check>**Table Browsing** - View table data with proper type handling</Check>
+<Check>**Query Execution** - Run T-SQL queries with SQL Server extensions</Check>
+<Check>**Data Export** - Export tables to CSV or JSON formats</Check>
+
+<Note>
+SQL Server supports multiple schemas (e.g., `dbo`, `sales`, `hr`). Queryly displays tables with their schema names.
+</Note>
+
+## TrustServerCertificate Explained
+
+### What is TrustServerCertificate?
+
+The `TrustServerCertificate` parameter controls SSL/TLS certificate validation:
+
+<Tabs>
+  <Tab title="True (Development)">
+    ```bash
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+    ```
+
+    **Use when:**
+    - Connecting to localhost/LocalDB
+    - Development environments
+    - Self-signed certificates
+    - Testing scenarios
+
+    <Warning>
+    Using `TrustServerCertificate=True` disables certificate validation and makes connections vulnerable to man-in-the-middle attacks. Only use in trusted environments.
+    </Warning>
+  </Tab>
+
+  <Tab title="False (Production)">
+    ```bash
+    Server=db.example.com;Database=myapp;User Id=sa;Password=pass;Encrypt=True;TrustServerCertificate=False
+    ```
+
+    **Use when:**
+    - Production environments
+    - Remote servers with valid certificates
+    - Azure SQL Database
+    - Security is a priority
+
+    <Check>
+    Always use `TrustServerCertificate=False` in production with valid SSL certificates.
+    </Check>
+  </Tab>
+</Tabs>
+
+### Common Scenarios
+
+| Scenario | Setting | Explanation |
+|----------|---------|-------------|
+| LocalDB | `TrustServerCertificate=True` | LocalDB uses self-signed certificates |
+| Local SQL Express | `TrustServerCertificate=True` | Default installation has no valid certificate |
+| Azure SQL Database | `TrustServerCertificate=False` | Azure provides valid certificates |
+| Production (valid cert) | `TrustServerCertificate=False` | Validate certificate for security |
+| Production (self-signed) | `TrustServerCertificate=True` | Only if you trust the server |
+
+## Schema Support
+
+SQL Server organizes tables into schemas. Queryly fully supports this:
+
+### Understanding Schemas
+
+```bash
+# Tables are displayed with schema prefix
+queryly schema list ProductionSQL
+# Output:
+# dbo.Users
+# dbo.Orders
+# sales.Customers
+# hr.Employees
+```
+
+### Querying with Schemas
+
+```bash
+queryly data query ProductionSQL
+
+# Query tables with schema prefix
+SQL> SELECT * FROM dbo.Users;
+SQL> SELECT * FROM sales.Customers;
+SQL> SELECT * FROM hr.Employees;
+
+# Cross-schema joins
+SQL> SELECT u.name, o.total 
+     FROM dbo.Users u 
+     JOIN sales.Orders o ON u.id = o.user_id;
+```
+
+### Browsing Schema Tables
+
+```bash
+# Browse table (specify full schema.table name)
+queryly data browse ProductionSQL dbo.Users
+queryly data browse ProductionSQL sales.Customers
+
+# View table structure
+queryly schema info ProductionSQL dbo.Users
+```
+
+## SQL Server-Specific Features
+
+### Data Type Support
+
+Queryly handles SQL Server's rich type system:
+
+- **Numeric**: `int`, `bigint`, `decimal`, `numeric`, `float`, `real`, `money`
+- **Text**: `varchar`, `nvarchar`, `char`, `nchar`, `text`, `ntext`
+- **Date/Time**: `datetime`, `datetime2`, `date`, `time`, `datetimeoffset`
+- **Binary**: `binary`, `varbinary`, `image`
+- **Other**: `bit`, `uniqueidentifier`, `xml`, `sql_variant`
+- **Spatial**: `geography`, `geometry`
+
+### T-SQL Query Examples
+
+<Tabs>
+  <Tab title="Basic Queries">
+    ```bash
+    queryly data query ProductionSQL
+
+    # Select queries
+    SQL> SELECT * FROM dbo.Users;
+    SQL> SELECT TOP 10 * FROM dbo.Orders;
+    SQL> SELECT name, email FROM dbo.Customers WHERE created_at > '2024-01-01';
+    ```
+  </Tab>
+
+  <Tab title="T-SQL Specific">
+    ```bash
+    # TOP instead of LIMIT
+    SQL> SELECT TOP 100 * FROM dbo.Orders;
+
+    # Window functions
+    SQL> SELECT name, salary, 
+              ROW_NUMBER() OVER (ORDER BY salary DESC) as rank
+         FROM dbo.Employees;
+
+    # Common Table Expressions (CTE)
+    SQL> WITH TopCustomers AS (
+           SELECT customer_id, SUM(total) as total_sales
+           FROM dbo.Orders
+           GROUP BY customer_id
+         )
+         SELECT c.name, tc.total_sales
+         FROM TopCustomers tc
+         JOIN dbo.Customers c ON tc.customer_id = c.id
+         ORDER BY tc.total_sales DESC;
+
+    # Date functions
+    SQL> SELECT DATEPART(year, created_at) as year,
+              DATEPART(month, created_at) as month,
+              COUNT(*) as count
+         FROM dbo.Orders
+         GROUP BY DATEPART(year, created_at), DATEPART(month, created_at);
+    ```
+  </Tab>
+
+  <Tab title="Information Queries">
+    ```bash
+    # Database size
+    SQL> EXEC sp_spaceused;
+
+    # Table sizes
+    SQL> SELECT 
+           t.name as TableName,
+           s.name as SchemaName,
+           p.rows as RowCount,
+           SUM(a.total_pages) * 8 as TotalSpaceKB
+         FROM sys.tables t
+         INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+         INNER JOIN sys.indexes i ON t.object_id = i.object_id
+         INNER JOIN sys.partitions p ON i.object_id = p.object_id AND i.index_id = p.index_id
+         INNER JOIN sys.allocation_units a ON p.partition_id = a.container_id
+         WHERE t.is_ms_shipped = 0
+         GROUP BY t.name, s.name, p.rows
+         ORDER BY SUM(a.total_pages) DESC;
+
+    # Current database and user
+    SQL> SELECT DB_NAME() as CurrentDatabase, SUSER_NAME() as CurrentUser;
+
+    # SQL Server version
+    SQL> SELECT @@VERSION;
+    ```
+  </Tab>
+</Tabs>
+
+## Common Workflows
+
+<Tabs>
+  <Tab title="Initial Setup">
+    ```bash
+    # Add connection
+    queryly connect add
+    # name: MySQLServer
+    # type: SQL Server
+    # connection string: Server=localhost;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+
+    # Test connection
+    queryly connect test MySQLServer
+
+    # List all tables (with schemas)
+    queryly schema list MySQLServer
+    ```
+  </Tab>
+
+  <Tab title="Data Exploration">
+    ```bash
+    # View schema as tree
+    queryly schema tree MySQLServer
+
+    # Check table structure (use schema.table)
+    queryly schema info MySQLServer dbo.Users
+
+    # Browse table data
+    queryly data browse MySQLServer dbo.Users
+
+    # Export to CSV
+    queryly data export MySQLServer dbo.Users csv
+    ```
+  </Tab>
+
+  <Tab title="Analysis">
+    ```bash
+    # Enter query mode
+    queryly data query MySQLServer
+
+    # Analyze data
+    SQL> SELECT TOP 30
+              CAST(created_at AS DATE) as date,
+              COUNT(*) as order_count,
+              SUM(total) as total_sales
+         FROM dbo.Orders
+         GROUP BY CAST(created_at AS DATE)
+         ORDER BY date DESC;
+
+    SQL> SELECT status, 
+              COUNT(*) as count,
+              AVG(total) as avg_total
+         FROM dbo.Orders
+         GROUP BY status;
+
+    SQL> exit
+    ```
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Cannot connect to server">
+    **Error**: `A network-related or instance-specific error occurred`
+
+    **Solutions**:
+    - Verify SQL Server is running (SQL Server Service)
+    - Enable TCP/IP in SQL Server Configuration Manager
+    - Check firewall rules (port 1433)
+    - Verify server name and instance name
+
+    ```bash
+    # Check SQL Server service status (Windows)
+    Get-Service MSSQLSERVER
+
+    # Or for named instance
+    Get-Service MSSQL$SQLEXPRESS
+    ```
+  </Accordion>
+
+  <Accordion title="Login failed">
+    **Error**: `Login failed for user 'sa'`
+
+    **Solutions**:
+    - Verify username and password
+    - Enable SQL Server Authentication (Mixed Mode)
+    - Check user account is not locked or disabled
+    - For Windows Auth, ensure proper domain/workgroup setup
+
+    ```sql
+    -- Enable SQL Server Authentication
+    -- In SSMS, right-click server → Properties → Security → SQL Server and Windows Authentication mode
+    
+    -- Reset SA password (Windows Auth required)
+    ALTER LOGIN sa ENABLE;
+    ALTER LOGIN sa WITH PASSWORD = 'NewPassword123';
+    ```
+  </Accordion>
+
+  <Accordion title="Certificate validation failed">
+    **Error**: `The certificate chain was issued by an authority that is not trusted`
+
+    **Solutions**:
+    - Add `TrustServerCertificate=True` to connection string
+    - Install a valid SSL certificate on SQL Server
+    - For Azure SQL, ensure `TrustServerCertificate=False`
+
+    ```bash
+    # For local development
+    Server=localhost;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+    ```
+  </Accordion>
+
+  <Accordion title="Database does not exist">
+    **Error**: `Cannot open database "myapp" requested by the login`
+
+    **Solutions**:
+    - Verify database name (case-insensitive but must match)
+    - Create the database if needed
+    - Check user has access to the database
+
+    ```sql
+    -- List databases
+    SELECT name FROM sys.databases;
+
+    -- Create database
+    CREATE DATABASE myapp;
+
+    -- Grant access
+    USE myapp;
+    CREATE USER appuser FOR LOGIN appuser;
+    ALTER ROLE db_datareader ADD MEMBER appuser;
+    ALTER ROLE db_datawriter ADD MEMBER appuser;
+    ```
+  </Accordion>
+
+  <Accordion title="Named instance not found">
+    **Error**: `SQL Server does not exist or access denied`
+
+    **Solutions**:
+    - Verify instance name: `Server=localhost\INSTANCENAME`
+    - Enable SQL Server Browser service
+    - Use server name with port: `Server=localhost,1433`
+
+    ```bash
+    # Start SQL Server Browser service (Windows)
+    Start-Service SQLBrowser
+
+    # Or use explicit port
+    Server=localhost,1433;Database=myapp;User Id=sa;Password=pass;TrustServerCertificate=True
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Check>**Use Windows Authentication** when possible for better security</Check>
+<Check>**Enable encryption** for remote connections</Check>
+<Check>**Use schemas** to organize tables logically (sales, hr, etc.)</Check>
+<Check>**Regular backups** - use SQL Server backup tools or scripts</Check>
+<Check>**Monitor connections** - use SQL Server Management Studio or DMVs</Check>
+
+<Warning>
+Avoid:
+- Using `sa` account for applications (create dedicated users)
+- `TrustServerCertificate=True` in production with remote servers
+- Default passwords on SQL Server instances
+- Exposing SQL Server directly to the internet
+</Warning>
+
+## Working with Commands
+
+SQL Server works with all Queryly commands:
+
+```bash
+# Connection management
+queryly connect add
+queryly connect list
+queryly connect test MySQLServer
+queryly connect remove MySQLServer
+
+# Schema exploration (note: schema.table format)
+queryly schema list MySQLServer
+queryly schema info MySQLServer dbo.Users
+queryly schema tree MySQLServer
+
+# Data operations (use schema.table format)
+queryly data browse MySQLServer dbo.Users
+queryly data query MySQLServer
+queryly data export MySQLServer dbo.Users csv
+queryly data export MySQLServer dbo.Orders json
+```
+
+<Card title="Command Reference" icon="terminal" href="/commands/overview">
+  See the complete command reference for all available options
+</Card>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Schema Exploration" icon="sitemap" href="/commands/schema">
+    Learn how to explore SQL Server schemas
+  </Card>
+  <Card title="Data Operations" icon="table" href="/commands/data">
+    Browse and query table data
+  </Card>
+  <Card title="Providers Overview" icon="database" href="/providers/overview">
+    Compare all database providers
+  </Card>
+  <Card title="Connection Management" icon="plug" href="/commands/connect">
+    Manage your database connections
+  </Card>
+</CardGroup>

@@ -1,0 +1,418 @@
+---
+title: Architecture Overview
+description: Understand Queryly's layered architecture and design principles
+---
+
+Queryly is built with a clean, layered architecture that separates concerns and makes the codebase maintainable and extensible.
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────┐
+│         CLI Layer                   │
+│    (Commands, UI, Program.cs)       │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│         Core Layer                  │
+│  (Models, Interfaces, Business      │
+│   Logic, Connection Management)     │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│       Providers Layer               │
+│  (Database-specific implementations)│
+│   SQLite, SQL Server, PostgreSQL    │
+└─────────────────────────────────────┘
+```
+
+## Three-Layer Architecture
+
+Queryly follows a layered architecture pattern with clear separation of concerns:
+
+### 1. CLI Layer
+
+**Location:** `src/Queryly.CLI/`
+
+The presentation layer that handles user interaction and command processing.
+
+**Responsibilities:**
+- Command-line argument parsing
+- User input/output via Spectre.Console
+- Command routing and orchestration
+- Configuration file management
+
+**Key Components:**
+- `Program.cs` - Application entry point
+- `Commands/` - Command implementations (connect, schema, data)
+- `Configuration/` - Config helpers for reading/writing connections.json
+
+### 2. Core Layer
+
+**Location:** `src/Queryly.Core/`
+
+The business logic layer that defines contracts and core functionality.
+
+**Responsibilities:**
+- Define data models and interfaces
+- Connection management logic
+- Schema exploration logic
+- Query execution logic
+- Exception handling
+
+**Key Components:**
+- `Models/` - Data models (ConnectionInfo, TableInfo, ColumnInfo, DatabaseType)
+- `Connections/` - IConnectionProvider interface
+- `Query/` - Query execution logic
+- `Exceptions/` - Custom exceptions
+
+### 3. Providers Layer
+
+**Location:** `src/Queryly.Providers/`
+
+The data access layer with database-specific implementations.
+
+**Responsibilities:**
+- Implement IConnectionProvider for each database
+- Handle database-specific SQL syntax
+- Manage database-specific connection types
+- Query database metadata (tables, columns, schemas)
+
+**Key Components:**
+- `Sqlite/` - SQLite implementation
+- `SqlServer/` - SQL Server implementation
+- `PostgreSql/` - PostgreSQL implementation
+- `MySql/` - MySQL implementation
+
+## Project Structure
+
+```
+Queryly/
+├── src/
+│   ├── Queryly.Core/           # Business logic
+│   │   ├── Models/             # Data models
+│   │   ├── Connections/        # Connection management
+│   │   ├── Schema/             # Schema operations
+│   │   ├── Query/              # Query execution
+│   │   └── Exceptions/         # Custom exceptions
+│   ├── Queryly.Providers/      # Database providers
+│   │   ├── Sqlite/             # SQLite implementation
+│   │   ├── SqlServer/          # SQL Server implementation
+│   │   ├── PostgreSql/         # PostgreSQL implementation
+│   │   └── MySql/              # MySQL implementation
+│   └── Queryly.CLI/            # CLI application
+│       ├── Commands/           # Command implementations
+│       ├── Configuration/      # Config helpers
+│       └── Program.cs          # Entry point
+└── tests/
+    └── Queryly.Tests/          # Unit tests
+```
+
+## Technology Stack
+
+Queryly leverages modern .NET technologies and best-in-class libraries:
+
+### Core Technologies
+
+- **Language:** C# 12
+- **Runtime:** .NET 8
+- **Database Access:** ADO.NET, Dapper
+- **Terminal UI:** Spectre.Console
+- **Configuration:** System.Text.Json
+
+### Database Providers
+
+- **SQLite:** Microsoft.Data.Sqlite
+- **SQL Server:** Microsoft.Data.SqlClient
+- **PostgreSQL:** Npgsql
+- **MySQL:** MySql.Data
+
+### Testing
+
+- **Test Framework:** xUnit
+- **Mocking:** Moq
+- **Assertions:** FluentAssertions
+
+## Component Interaction
+
+### Connection Flow
+
+<Steps>
+
+### User executes command
+
+```bash
+queryly schema list MyDB
+```
+
+### CLI layer parses command
+
+The `SchemaListCommand` in the CLI layer receives the connection name.
+
+### Core layer retrieves connection
+
+Connection info is loaded from `~/.queryly/connections.json`.
+
+### Provider is instantiated
+
+Based on the `DatabaseType`, the appropriate provider (SqliteConnectionProvider, etc.) is created.
+
+### Provider opens connection
+
+The provider's `OpenConnectionAsync()` method establishes a database connection.
+
+### Provider executes database-specific query
+
+The provider's `GetTablesAsync()` method runs database-specific SQL to fetch tables.
+
+### Results flow back
+
+Data flows back through Core → CLI → User display (via Spectre.Console).
+
+</Steps>
+
+### Data Flow Diagram
+
+```
+User Command
+    ↓
+CLI Command Handler
+    ↓
+Core Business Logic
+    ↓
+IConnectionProvider Interface
+    ↓
+Database-Specific Provider
+    ↓
+Database Connection
+    ↓
+Query Results
+    ↓
+Core Models (TableInfo, ColumnInfo)
+    ↓
+CLI Display (Spectre.Console)
+    ↓
+User Output
+```
+
+## Dependency Flow
+
+Queryly follows strict dependency rules:
+
+```
+Queryly.CLI
+    ↓ (depends on)
+Queryly.Core
+    ↑ (implements)
+Queryly.Providers
+```
+
+<Note>
+**Dependency Inversion:** The Core layer defines interfaces (IConnectionProvider), and the Providers layer implements them. The CLI layer depends only on Core abstractions, not concrete implementations.
+</Note>
+
+## Key Design Patterns
+
+### 1. Provider Pattern
+
+Each database has its own provider implementing `IConnectionProvider`:
+
+```csharp
+public interface IConnectionProvider
+{
+    DatabaseType Type { get; }
+    Task<DbConnection> OpenConnectionAsync(string connectionString);
+    Task<bool> TestConnectionAsync(string connectionString);
+    List<string> GetDatabasesAsync(DbConnection connection);
+    Task<List<TableInfo>> GetTablesAsync(DbConnection connection, string database);
+    Task<List<ColumnInfo>> GetColumnsAsync(DbConnection connection, string database, string table);
+}
+```
+
+This pattern allows easy addition of new databases without changing core logic.
+
+### 2. Factory Pattern
+
+Providers are instantiated based on `DatabaseType`:
+
+```csharp
+IConnectionProvider provider = dbType switch
+{
+    DatabaseType.SQLite => new SqliteConnectionProvider(),
+    DatabaseType.PostgreSQL => new PostgreSQLConnectionProvider(),
+    DatabaseType.MySQL => new MySQLConnectionProvider(),
+    DatabaseType.SQLServer => new SqlServerConnectionProvider(),
+    _ => throw new NotSupportedException($"Database type {dbType} not supported")
+};
+```
+
+### 3. Repository Pattern
+
+Connection configurations are stored and retrieved from JSON:
+
+```
+~/.queryly/connections.json
+```
+
+This provides persistent storage without a database dependency.
+
+### 4. Command Pattern
+
+Each CLI command is a separate class that handles specific functionality:
+
+- `ConnectAddCommand`
+- `ConnectListCommand`
+- `SchemaListCommand`
+- `DataBrowseCommand`
+- etc.
+
+## Design Principles
+
+### Separation of Concerns
+
+- **CLI:** User interaction only
+- **Core:** Business logic and contracts
+- **Providers:** Database-specific implementation
+
+### Single Responsibility
+
+Each provider handles one database type. Each command handles one user operation.
+
+### Open/Closed Principle
+
+New databases can be added by implementing `IConnectionProvider` without modifying existing code.
+
+### Dependency Inversion
+
+High-level modules (CLI) depend on abstractions (IConnectionProvider), not concrete implementations.
+
+## Error Handling Strategy
+
+### Exception Hierarchy
+
+- Custom exceptions in `Queryly.Core/Exceptions/`
+- Database-specific exceptions wrapped in meaningful messages
+- User-friendly error messages displayed via CLI
+
+### Example
+
+```csharp
+try
+{
+    await provider.OpenConnectionAsync(connectionString);
+}
+catch (SqliteException ex)
+{
+    throw new ConnectionException($"Failed to connect to SQLite: {ex.Message}", ex);
+}
+```
+
+## Configuration Management
+
+### Storage Location
+
+<Tabs>
+  <Tab title="Windows">
+    ```
+    C:\Users\<username>\.queryly\connections.json
+    ```
+  </Tab>
+  <Tab title="macOS/Linux">
+    ```
+    ~/.queryly/connections.json
+    ```
+  </Tab>
+</Tabs>
+
+### Configuration Format
+
+```json
+{
+  "connections": [
+    {
+      "id": "abc123...",
+      "name": "LocalDB",
+      "dbType": "SQLite",
+      "connectionString": "Data Source=./myapp.db",
+      "lastUsed": "2025-12-13T10:30:00Z",
+      "isFavorite": false,
+      "metadata": {}
+    }
+  ],
+  "activeConnectionId": "abc123..."
+}
+```
+
+## Performance Considerations
+
+### Fast Startup
+
+- Minimal dependencies
+- Lazy loading of providers
+- Configuration loaded on-demand
+
+### Efficient Queries
+
+- Use Dapper for lightweight ORM
+- Parameterized queries to prevent SQL injection
+- Connection pooling via ADO.NET
+
+### Memory Management
+
+- `using` statements for proper disposal
+- Async/await for non-blocking I/O
+- Streaming large result sets
+
+## Extensibility Points
+
+### Adding New Databases
+
+Implement `IConnectionProvider` for the new database type.
+
+See [Adding Providers](/development/adding-providers) for details.
+
+### Adding New Commands
+
+Create a new command class in `Queryly.CLI/Commands/`.
+
+### Adding New Export Formats
+
+Extend the export logic in the Core layer.
+
+## Security Considerations
+
+### Connection Strings
+
+- Stored in local user directory
+- File permissions restrict access to current user
+- No encryption (relies on OS-level security)
+
+<Warning>
+Connection strings contain credentials. The `~/.queryly/` directory should have restricted permissions (0700 on Unix systems).
+</Warning>
+
+### SQL Injection Prevention
+
+- Parameterized queries throughout
+- No direct string concatenation for user input
+- Provider implementations sanitize table/column names
+
+## Testing Strategy
+
+### Unit Tests
+
+- Test individual components in isolation
+- Mock database connections
+- Verify business logic correctness
+
+### Integration Tests
+
+- Test against real databases (SQLite in-memory)
+- Verify provider implementations
+- Test end-to-end command flows
+
+## Related Documentation
+
+- [Contributing Guide](/development/contributing)
+- [Adding Providers](/development/adding-providers)
+- [Configuration Reference](/guides/configuration)
